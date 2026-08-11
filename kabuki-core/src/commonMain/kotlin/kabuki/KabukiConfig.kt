@@ -49,6 +49,25 @@ public class KabukiConfig {
     public var strictListeners: Boolean = false
 
     /**
+     * Reports a failure that is already on its way out. Never throws, even with
+     * [strictListeners] on: a broken listener must not replace the real error.
+     */
+    internal fun notifyFailure(error: Throwable, block: KabukiListener.() -> Unit) {
+        for (listener in listeners) {
+            try {
+                listener.block()
+            } catch (e: Throwable) {
+                // Throwable, not Exception: an assert inside a listener throws an
+                // AssertionError, and nothing a listener throws may outrank the
+                // real failure. Suppressed does not always survive the trip out of
+                // the test framework, hence the console too.
+                error.addSuppressed(e)
+                reportBrokenListener(listener, e, "while reporting a failure")
+            }
+        }
+    }
+
+    /**
      * Notifies every listener, honouring [strictListeners]. Report through this
      * rather than iterating [listeners], which silently loses the isolation.
      */
@@ -60,12 +79,19 @@ public class KabukiConfig {
             }
             try {
                 listener.block()
-            } catch (e: Exception) {
-                // The listeners are what is broken here, so reporting through them
-                // is not an option. Errors (OOM and friends) are left to propagate.
-                println("[KABUKI] listener ${listener::class.simpleName} threw ${e::class.simpleName}: ${e.message}")
+            } catch (e: Throwable) {
+                // Isolation that covers only Exception is not isolation.
+                reportBrokenListener(listener, e, "")
             }
         }
+    }
+
+    private fun reportBrokenListener(listener: KabukiListener, error: Throwable, context: String) {
+        val where = if (context.isEmpty()) "" else " $context"
+        println(
+            "[KABUKI] listener ${listener::class.simpleName} threw " +
+                "${error::class.simpleName}$where: ${error.message}",
+        )
     }
 }
 

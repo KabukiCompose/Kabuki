@@ -131,8 +131,9 @@ public class LazyList(
     public fun assertLengthEquals(expected: Int) {
         val scope = scopeProvider()
         var actual: Int? = null
-        scope.retryUntilSuccess(
-            conditionDescription = "assertLengthEquals($expected) on $description",
+        scope.runOperation(
+            operation = "assertLengthEquals($expected)",
+            nodeDescription = description,
             timeout = scope.config.defaultTimeout,
             onTimeout = { cause, timeoutUsed ->
                 KabukiAssertionError(

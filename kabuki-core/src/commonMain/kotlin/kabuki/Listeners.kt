@@ -1,5 +1,7 @@
 package kabuki
 
+import kotlin.time.Duration
+
 /** The test being run, as the runner sees it. Reported to every [KabukiListener]. */
 public data class TestInfo(
     /** Human-readable name passed to `runKabukiTest(name = ...)`. */
@@ -25,16 +27,38 @@ public sealed interface StepResult {
     public data class Failed(val error: Throwable) : StepResult
 }
 
-/**
- * A node operation about to be performed. Fired once per operation, BEFORE the
- * retry loop starts - so a single [OperationInfo] can cover many attempts.
- */
+/** A node operation. Reported once at the start and once at the end of its retry loop. */
 public data class OperationInfo(
     /** e.g. "click", "assertIsDisplayed", "scrollToIndex(25)". */
     val operation: String,
     /** Node description, e.g. "tag 'PlaybillTags.SCREEN'". */
     val node: String,
 )
+
+/**
+ * Outcome of a node operation. [attempts] separates an instant success from one
+ * the UI made us wait for - both are green, but only one is fast.
+ */
+public sealed interface OperationResult {
+    /** How many times the operation was actually executed before it finished. */
+    public val attempts: Int
+
+    /** Wall-clock time from the first attempt to the last, real time. */
+    public val duration: Duration
+
+    /** The operation succeeded, possibly after several attempts. */
+    public data class Succeeded(
+        override val attempts: Int,
+        override val duration: Duration,
+    ) : OperationResult
+
+    /** The operation never succeeded within its timeout; [error] is about to be thrown. */
+    public data class Failed(
+        val error: Throwable,
+        override val attempts: Int,
+        override val duration: Duration,
+    ) : OperationResult
+}
 
 /** Outcome of a whole test, reported to listeners by the runner. */
 public sealed interface TestResult {
@@ -58,11 +82,21 @@ public interface KabukiListener {
     /** A step is entered. Nested steps arrive between their parent's start and finish. */
     public fun onStepStart(step: StepInfo) {}
 
-    /** A step is left, successfully or not. Always fired if [onStepStart] was. */
+    /**
+     * A step is left, successfully or not. Fired whenever the step body ran - the
+     * one case without it is a listener throwing on [onStepStart] under
+     * [KabukiConfig.strictListeners], where the step never starts.
+     */
     public fun onStepFinish(step: StepInfo, result: StepResult) {}
 
-    /** Every node operation: clicks, asserts, text input. Fired before the operation runs. */
-    public fun onOperation(operation: OperationInfo) {}
+    /** A node operation is about to start - before the first attempt. */
+    public fun onOperationStart(operation: OperationInfo) {}
+
+    /**
+     * A node operation is over. [result] carries what only the retry loop knows:
+     * how many attempts it took and how long it ran.
+     */
+    public fun onOperationFinish(operation: OperationInfo, result: OperationResult) {}
 
     /** Free-form messages from KabukiTestScope.log and runners. */
     public fun onLog(message: String) {}
@@ -88,6 +122,10 @@ public interface KabukiListener {
  *
  * [verbose] additionally reports every node operation.
  * [out] is the sink, replaceable so that the listener itself can be tested.
+ *
+ * NOT thread-safe: it holds the buffer of one test. Every test gets its own
+ * instance by default; sharing one between tests that run in parallel corrupts
+ * the output.
  */
 public class ConsoleListener(
     private val verbose: Boolean = false,
@@ -100,7 +138,12 @@ public class ConsoleListener(
     private var flushed: Boolean = false
 
     override fun onTestStart(test: TestInfo) {
+        // Reset: one instance may serve several tests, and a failure in an earlier
+        // one would otherwise leave buffering switched off for good.
         testName = test.name
+        buffered.clear()
+        flushed = false
+
         if (streaming) {
             out(prefixed("STARTING TEST: ${test.name} (${test.profile.platform}/${test.profile.os})"))
         }
@@ -117,10 +160,14 @@ public class ConsoleListener(
         }
     }
 
-    override fun onOperation(operation: OperationInfo) {
-        if (verbose) {
-            emit("  ${operation.operation} on ${operation.node}")
+    override fun onOperationFinish(operation: OperationInfo, result: OperationResult) {
+        if (!verbose) {
+            return
         }
+        // Attempts are reported only when there was a wait: "1 attempt" is noise.
+        val retries = if (result.attempts > 1) " after ${result.attempts} attempts" else ""
+        val outcome = if (result is OperationResult.Failed) "FAILED" else "ok"
+        emit("  ${operation.operation} on ${operation.node} - $outcome$retries")
     }
 
     override fun onLog(message: String) {

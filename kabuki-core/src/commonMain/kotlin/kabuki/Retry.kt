@@ -5,20 +5,56 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.printToString
 import kotlin.time.Duration
+import kotlin.time.TimeSource
 
 /**
- * The single retry primitive of Kabuki: runs [block] until it stops throwing
- * or the [timeout] expires. Built on ComposeUiTest.waitUntil (v2 API), which
- * advances the virtual clock between attempts.
+ * One node operation: report, retry until success or timeout, report the outcome
+ * with attempts and duration. Every UI operation goes through here, so none can
+ * be missing from the report.
+ */
+internal fun KabukiTestScope.runOperation(
+    operation: String,
+    nodeDescription: String,
+    timeout: Duration,
+    onTimeout: (cause: Throwable?, timeoutUsed: Duration) -> Throwable,
+    block: () -> Unit,
+) {
+    val info = OperationInfo(operation = operation, node = nodeDescription)
+    config.notifyListeners { onOperationStart(info) }
+
+    val started = TimeSource.Monotonic.markNow()
+    var attempts = 0
+
+    try {
+        retryUntilSuccess(
+            conditionDescription = "$operation on $nodeDescription",
+            timeout = timeout,
+            onTimeout = onTimeout,
+        ) {
+            attempts++
+            block()
+        }
+    } catch (e: Throwable) {
+        val failure = OperationResult.Failed(e, attempts, started.elapsedNow())
+        config.notifyFailure(e) { onOperationFinish(info, failure) }
+        throw e
+    }
+
+    val success = OperationResult.Succeeded(attempts, started.elapsedNow())
+    config.notifyListeners { onOperationFinish(info, success) }
+}
+
+/**
+ * The retry primitive: runs [block] until it stops throwing or [timeout] expires.
+ * Built on ComposeUiTest.waitUntil (v2 API), which advances the virtual clock
+ * between attempts. [KabukiConfig.pollingInterval] adds a real-time pause; with
+ * Duration.ZERO the loop retries on every rendered frame. On timeout a semantics
+ * tree dump is appended (see [KabukiConfig.dumpSemanticsTreeOnFailure]).
  *
- * [KabukiConfig.pollingInterval] adds an extra real-time pause between attempts;
- * with Duration.ZERO the loop retries on every rendered frame.
- *
- * On timeout, a semantics tree dump is appended to the failure message
- * (see [KabukiConfig.dumpSemanticsTreeOnFailure]).
+ * Private: retrying without reporting should not be reachable - see [runOperation].
  */
 @OptIn(ExperimentalTestApi::class)
-internal fun KabukiTestScope.retryUntilSuccess(
+private fun KabukiTestScope.retryUntilSuccess(
     conditionDescription: String,
     timeout: Duration,
     onTimeout: (cause: Throwable?, timeoutUsed: Duration) -> Throwable,

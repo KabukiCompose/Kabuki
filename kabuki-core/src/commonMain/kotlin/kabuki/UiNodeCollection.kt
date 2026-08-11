@@ -72,8 +72,9 @@ public class UiNodeCollection(
 
     private fun assertCount(operation: String, matches: (actual: Int) -> Boolean) {
         var actual: Int? = null
-        scope.retryUntilSuccess(
-            conditionDescription = "$operation on $description",
+        scope.runOperation(
+            operation = operation,
+            nodeDescription = description,
             timeout = timeout ?: scope.config.defaultTimeout,
             onTimeout = { cause, timeoutUsed ->
                 KabukiAssertionError(

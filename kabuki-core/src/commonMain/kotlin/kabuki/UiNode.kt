@@ -291,7 +291,9 @@ public class UiNode(
 
     /** The node's text matches [expected] exactly. */
     public fun assertTextEquals(expected: String) {
-        assertText(expected, substring = false)
+        // The operation is named after the PUBLIC method: a report that says
+        // "assertText" sends the reader looking for a line that is not in the test.
+        assertText("assertTextEquals('$expected')", expected, substring = false)
     }
 
     /**
@@ -299,7 +301,7 @@ public class UiNode(
      * (its own and merged children) - any match counts.
      */
     public fun assertTextContains(expected: String, substring: Boolean = true) {
-        assertText(expected, substring)
+        assertText("assertTextContains('$expected')", expected, substring)
     }
 
     /**
@@ -413,10 +415,10 @@ public class UiNode(
         }
     }
 
-    private fun assertText(expected: String, substring: Boolean) {
+    private fun assertText(operation: String, expected: String, substring: Boolean) {
         var actual: String? = null
         retryOperation(
-            operation = "assertText('$expected', substring=$substring)",
+            operation = operation,
             onTimeout = { cause, timeoutUsed ->
                 KabukiAssertionError(
                     message = buildString {
@@ -494,7 +496,6 @@ public class UiNode(
         },
         block: () -> Unit,
     ) {
-        scope.notifyOperation(OperationInfo(operation = operation, node = description))
         val interceptors = scope.config.interceptors
         // The chain lives INSIDE retryUntilSuccess: a replacement installed by an
         // interceptor is retried exactly like the original operation would be.
@@ -503,8 +504,9 @@ public class UiNode(
         } else {
             { runInterceptorChain(interceptors, index = 0, operation = operation, original = block) }
         }
-        scope.retryUntilSuccess(
-            conditionDescription = "$operation on $description",
+        scope.runOperation(
+            operation = operation,
+            nodeDescription = description,
             timeout = timeout ?: scope.config.defaultTimeout,
             onTimeout = onTimeout,
             block = effective,

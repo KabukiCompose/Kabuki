@@ -1,7 +1,8 @@
-package kabuki.runner.selftest
+﻿package kabuki.runner.selftest
 
 import kabuki.ConsoleListener
 import kabuki.OperationInfo
+import kabuki.OperationResult
 import kabuki.Profiles
 import kabuki.StepInfo
 import kabuki.StepResult
@@ -10,6 +11,7 @@ import kabuki.TestResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Self-test for the console output policy. Pure logic, no UI: the listener
@@ -96,15 +98,75 @@ class ConsoleListenerSelfTest {
     }
 
     @Test
+    fun oneInstanceCanServeSeveralTests() {
+        val lines = mutableListOf<String>()
+        val listener = ConsoleListener(out = { line -> lines += line })
+        val second = TestInfo(name = "Second test", profile = Profiles.Desktop.Default)
+
+        // First test fails: that flushes the buffer and switches to direct output
+        listener.onTestStart(info)
+        listener.onStepFinish(StepInfo("1", "step"), StepResult.Failed(IllegalStateException("boom")))
+        listener.onTestFinish(info, TestResult.Failed(IllegalStateException("boom")))
+        val afterFirst = lines.size
+
+        listener.onTestStart(second)
+        listener.onStepStart(StepInfo(label = "1", description = "step of the second test"))
+
+        assertEquals(
+            afterFirst,
+            lines.size,
+            "The second test must be buffered again - a failure in an earlier test " +
+                "must not disable buffering for good: ${lines.drop(afterFirst)}",
+        )
+    }
+
+    @Test
     fun operationsAreReportedOnlyWhenVerbose() {
         val quiet = mutableListOf<String>()
         val loud = mutableListOf<String>()
         val operation = OperationInfo(operation = "click", node = "tag 'CARD'")
 
-        ConsoleListener(streaming = true, out = { line -> quiet += line }).onOperation(operation)
-        ConsoleListener(verbose = true, streaming = true, out = { line -> loud += line }).onOperation(operation)
+        val result = OperationResult.Succeeded(attempts = 1, duration = 5.milliseconds)
+        ConsoleListener(streaming = true, out = { line -> quiet += line })
+            .onOperationFinish(operation, result)
+        ConsoleListener(verbose = true, streaming = true, out = { line -> loud += line })
+            .onOperationFinish(operation, result)
 
         assertTrue(quiet.isEmpty(), "Operations are noise unless asked for: $quiet")
         assertTrue(loud.any { line -> line.contains("click") }, "$loud")
+    }
+
+    @Test
+    fun aFailedOperationIsMarkedAsSuchInVerboseOutput() {
+        val lines = mutableListOf<String>()
+        val listener = ConsoleListener(verbose = true, streaming = true, out = { line -> lines += line })
+
+        listener.onOperationFinish(
+            OperationInfo(operation = "assertIsDisplayed", node = "tag 'CARD'"),
+            OperationResult.Failed(AssertionError("not displayed"), attempts = 12, duration = 5.milliseconds),
+        )
+
+        assertTrue(
+            lines.single().contains("FAILED"),
+            "A failed operation must be distinguishable from a successful one: $lines",
+        )
+    }
+
+    @Test
+    fun attemptsAreShownOnlyWhenThereWasAWait() {
+        val instant = mutableListOf<String>()
+        val awaited = mutableListOf<String>()
+        val operation = OperationInfo(operation = "assertIsDisplayed", node = "tag 'CARD'")
+
+        ConsoleListener(verbose = true, streaming = true, out = { line -> instant += line })
+            .onOperationFinish(operation, OperationResult.Succeeded(attempts = 1, duration = 1.milliseconds))
+        ConsoleListener(verbose = true, streaming = true, out = { line -> awaited += line })
+            .onOperationFinish(operation, OperationResult.Succeeded(attempts = 40, duration = 1.milliseconds))
+
+        assertTrue(
+            !instant.single().contains("attempt"),
+            "One attempt is the normal case - saying so is noise: $instant",
+        )
+        assertTrue(awaited.single().contains("40 attempts"), "A real wait must be visible: $awaited")
     }
 }

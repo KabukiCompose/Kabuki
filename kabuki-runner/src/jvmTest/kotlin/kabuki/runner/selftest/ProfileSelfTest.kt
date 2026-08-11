@@ -123,7 +123,7 @@ private class RecordingListener : KabukiListener {
         startedSteps += step
     }
 
-    override fun onOperation(operation: OperationInfo) {
+    override fun onOperationStart(operation: OperationInfo) {
         operations += operation
     }
 

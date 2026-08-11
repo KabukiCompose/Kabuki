@@ -48,9 +48,9 @@ public class KabukiTestScope(
         stepCounters.add(0)
         try {
             block()
-            notifyListeners { onStepFinish(info, StepResult.Passed) }
+            notifyOutcome(error = null) { onStepFinish(info, StepResult.Passed) }
         } catch (e: Throwable) {
-            notifyListeners { onStepFinish(info, StepResult.Failed(e)) }
+            notifyOutcome(e) { onStepFinish(info, StepResult.Failed(e)) }
             throw e
         } finally {
             stepCounters.removeAt(stepCounters.lastIndex)
@@ -140,11 +140,20 @@ public class KabukiTestScope(
 
     /** For runner implementations: fires onTestFinish on all listeners. */
     public fun notifyTestFinish(test: TestInfo, result: TestResult) {
-        notifyListeners { onTestFinish(test, result) }
+        notifyOutcome((result as? TestResult.Failed)?.error) { onTestFinish(test, result) }
     }
 
-    internal fun notifyOperation(operation: OperationInfo) {
-        notifyListeners { onOperation(operation) }
+    /**
+     * Reports an outcome, picking the channel by whether it carries a failure.
+     * Routing everything through here means the rule "a broken listener never
+     * replaces the real error" cannot be forgotten at a new call site.
+     */
+    private fun notifyOutcome(error: Throwable?, block: KabukiListener.() -> Unit) {
+        if (error == null) {
+            notifyListeners(block)
+        } else {
+            config.notifyFailure(error, block)
+        }
     }
 
     private fun notifyListeners(block: KabukiListener.() -> Unit) {
