@@ -1,0 +1,23 @@
+public abstract class kabuki/runner/KabukiTestCase {
+	public static final field $stable I
+	public fun <init> ()V
+	protected abstract fun Content (Ljava/lang/Object;Landroidx/compose/runtime/Composer;I)V
+	protected fun afterTest (Ljava/lang/Object;)V
+	protected fun beforeTest (Ljava/lang/Object;)V
+	protected fun configure (Lkabuki/KabukiConfig;)V
+	protected abstract fun createEnvironment ()Ljava/lang/Object;
+	protected fun getProfile ()Lkabuki/TestProfile;
+	protected final fun runTest (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)V
+	public static synthetic fun runTest$default (Lkabuki/runner/KabukiTestCase;Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+}
+
+public final class kabuki/runner/RunAndroidTestKt {
+	public static final fun runAndroidTest (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun runAndroidTest$default (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+}
+
+public final class kabuki/runner/RunKabukiTest_androidKt {
+	public static final fun runKabukiTest (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun runKabukiTest$default (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+}
+

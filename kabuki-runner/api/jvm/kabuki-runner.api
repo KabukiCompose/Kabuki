@@ -1,0 +1,58 @@
+public abstract class kabuki/runner/KabukiTestCase {
+	public static final field $stable I
+	public fun <init> ()V
+	protected abstract fun Content (Ljava/lang/Object;Landroidx/compose/runtime/Composer;I)V
+	protected fun afterTest (Ljava/lang/Object;)V
+	protected fun beforeTest (Ljava/lang/Object;)V
+	protected fun configure (Lkabuki/KabukiConfig;)V
+	protected abstract fun createEnvironment ()Ljava/lang/Object;
+	protected fun getProfile ()Lkabuki/TestProfile;
+	protected final fun runTest (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)V
+	public static synthetic fun runTest$default (Lkabuki/runner/KabukiTestCase;Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+}
+
+public final class kabuki/runner/RunDesktopTestKt {
+	public static final fun runDesktopTest (Ljava/lang/String;Lkabuki/TestProfile;Lkabuki/runner/WindowMode;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun runDesktopTest$default (Ljava/lang/String;Lkabuki/TestProfile;Lkabuki/runner/WindowMode;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+}
+
+public final class kabuki/runner/RunKabukiTest_jvmKt {
+	public static final fun runKabukiTest (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun runKabukiTest$default (Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+}
+
+public abstract interface class kabuki/runner/WindowMode {
+}
+
+public final class kabuki/runner/WindowMode$Auto : kabuki/runner/WindowMode {
+	public static final field $stable I
+	public static final field INSTANCE Lkabuki/runner/WindowMode$Auto;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/runner/WindowMode$Headless : kabuki/runner/WindowMode {
+	public static final field $stable I
+	public static final field INSTANCE Lkabuki/runner/WindowMode$Headless;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/runner/WindowMode$Visible : kabuki/runner/WindowMode {
+	public static final field $stable I
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun copy (Ljava/lang/String;Z)Lkabuki/runner/WindowMode$Visible;
+	public static synthetic fun copy$default (Lkabuki/runner/WindowMode$Visible;Ljava/lang/String;ZILjava/lang/Object;)Lkabuki/runner/WindowMode$Visible;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAlwaysOnTop ()Z
+	public final fun getTitle ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

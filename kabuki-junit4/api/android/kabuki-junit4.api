@@ -1,0 +1,16 @@
+public abstract interface class kabuki/junit4/KabukiInterop {
+	public abstract fun getKabukiScope ()Lkabuki/KabukiTestScope;
+}
+
+public final class kabuki/junit4/RuleInteropKt {
+	public static final fun asKabukiContext (Landroidx/compose/ui/test/junit4/ComposeTestRule;)Lkabuki/KabukiComposeContext;
+	public static final fun kabuki (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun kabuki$default (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static final fun kabukiScope (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;)Lkabuki/KabukiTestScope;
+	public static synthetic fun kabukiScope$default (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/KabukiTestScope;
+}
+
+public final class kabuki/junit4/RuleInterop_androidKt {
+	public static final fun defaultInteropProfile ()Lkabuki/TestProfile;
+}
+

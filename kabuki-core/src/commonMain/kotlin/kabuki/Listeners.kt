@@ -1,0 +1,169 @@
+package kabuki
+
+/** The test being run, as the runner sees it. Reported to every [KabukiListener]. */
+public data class TestInfo(
+    /** Human-readable name passed to `runKabukiTest(name = ...)`. */
+    val name: String,
+    /** Environment the test runs in: platform, OS, scene size, density. */
+    val profile: TestProfile,
+)
+
+/** A single [KabukiTestScope.step], reported when it starts and when it finishes. */
+public data class StepInfo(
+    /** Hierarchical number: "1", "1.2", "1.2.1"... - depth is the nesting level. */
+    val label: String,
+    /** The text the test author wrote: `step("Open the seat picker")`. */
+    val description: String,
+)
+
+/** Outcome of a single [KabukiTestScope.step], reported to listeners. */
+public sealed interface StepResult {
+    /** The step body completed without throwing. */
+    public data object Passed : StepResult
+
+    /** The step body threw - [error] is rethrown after the listeners are notified. */
+    public data class Failed(val error: Throwable) : StepResult
+}
+
+/**
+ * A node operation about to be performed. Fired once per operation, BEFORE the
+ * retry loop starts - so a single [OperationInfo] can cover many attempts.
+ */
+public data class OperationInfo(
+    /** e.g. "click", "assertIsDisplayed", "scrollToIndex(25)". */
+    val operation: String,
+    /** Node description, e.g. "tag 'PlaybillTags.SCREEN'". */
+    val node: String,
+)
+
+/** Outcome of a whole test, reported to listeners by the runner. */
+public sealed interface TestResult {
+    /** The test body completed without throwing. */
+    public data object Passed : TestResult
+
+    /** The test body threw - [error] is what the test framework will report. */
+    public data class Failed(val error: Throwable) : TestResult
+}
+
+/**
+ * SPI for test lifecycle events: reporting (Allure), logging, metrics.
+ * Register via config: `config = { listeners += MyListener() }`.
+ * [ConsoleListener] is installed by default; clear [KabukiConfig.listeners]
+ * to remove it.
+ */
+public interface KabukiListener {
+    /** The runner has set up the environment; the test body has not started yet. */
+    public fun onTestStart(test: TestInfo) {}
+
+    /** A step is entered. Nested steps arrive between their parent's start and finish. */
+    public fun onStepStart(step: StepInfo) {}
+
+    /** A step is left, successfully or not. Always fired if [onStepStart] was. */
+    public fun onStepFinish(step: StepInfo, result: StepResult) {}
+
+    /** Every node operation: clicks, asserts, text input. Fired before the operation runs. */
+    public fun onOperation(operation: OperationInfo) {}
+
+    /** Free-form messages from KabukiTestScope.log and runners. */
+    public fun onLog(message: String) {}
+
+    /** The test body is over and the environment is about to be torn down. */
+    public fun onTestFinish(test: TestInfo, result: TestResult) {}
+}
+
+/**
+ * Default console output.
+ *
+ * Output of ONE test is collected and printed as a single block when the test
+ * finishes. This matters because Kabuki encourages running tests in parallel
+ * inside one JVM: printed line by line, two tests interleave and nothing in a
+ * line says which test it belongs to.
+ *
+ * There are two ways out of the buffer:
+ * - [streaming] prints every line as it happens, prefixed with the test name.
+ *   Use it when debugging a single test, or when a test might hang - a buffered
+ *   run shows nothing at all until the end.
+ * - a FAILED step flushes the buffer immediately, so the context of a failure is
+ *   on screen the moment it happens rather than after the teardown.
+ *
+ * [verbose] additionally reports every node operation.
+ * [out] is the sink, replaceable so that the listener itself can be tested.
+ */
+public class ConsoleListener(
+    private val verbose: Boolean = false,
+    private val streaming: Boolean = false,
+    private val out: (line: String) -> Unit = { line -> println(line) },
+) : KabukiListener {
+
+    private val buffered = mutableListOf<String>()
+    private var testName: String = ""
+    private var flushed: Boolean = false
+
+    override fun onTestStart(test: TestInfo) {
+        testName = test.name
+        if (streaming) {
+            out(prefixed("STARTING TEST: ${test.name} (${test.profile.platform}/${test.profile.os})"))
+        }
+    }
+
+    override fun onStepStart(step: StepInfo) {
+        emit("[STEP ${step.label}] ${step.description}")
+    }
+
+    override fun onStepFinish(step: StepInfo, result: StepResult) {
+        if (result is StepResult.Failed) {
+            emit("[STEP ${step.label} FAILED] ${step.description}")
+            flush()
+        }
+    }
+
+    override fun onOperation(operation: OperationInfo) {
+        if (verbose) {
+            emit("  ${operation.operation} on ${operation.node}")
+        }
+    }
+
+    override fun onLog(message: String) {
+        emit(message)
+    }
+
+    override fun onTestFinish(test: TestInfo, result: TestResult) {
+        // Only the first line of the failure: the rest is usually the semantics
+        // tree dump, which belongs in the test report, not in the header.
+        val verdict = when (result) {
+            is TestResult.Passed -> "PASSED"
+            is TestResult.Failed -> "FAILED - " + result.error.message?.lineSequence()?.firstOrNull().orEmpty()
+        }
+
+        if (streaming || flushed) {
+            out(prefixed("TEST $verdict"))
+            return
+        }
+
+        out("[KABUKI] --- ${test.name} --- $verdict (${test.profile.platform}/${test.profile.os})")
+        buffered.forEach { line -> out("[KABUKI]   $line") }
+        buffered.clear()
+    }
+
+    private fun emit(line: String) {
+        if (streaming || flushed) {
+            out(prefixed(line))
+        } else {
+            buffered += line
+        }
+    }
+
+    /** Pours out what was collected so far and keeps printing directly from now on. */
+    private fun flush() {
+        if (flushed) {
+            return
+        }
+        flushed = true
+        buffered.forEach { line -> out(prefixed(line)) }
+        buffered.clear()
+    }
+
+    private fun prefixed(line: String): String {
+        return if (testName.isEmpty()) "[KABUKI] $line" else "[KABUKI][$testName] $line"
+    }
+}

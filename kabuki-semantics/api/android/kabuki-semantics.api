@@ -1,0 +1,20 @@
+public final class kabuki/semantics/ColorSemanticsKt {
+	public static final fun getBackgroundColorKey ()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+	public static final fun getTintColorKey ()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+	public static final fun testBackgroundColor-4WTKRHQ (Landroidx/compose/ui/Modifier;J)Landroidx/compose/ui/Modifier;
+	public static final fun testTintColor-4WTKRHQ (Landroidx/compose/ui/Modifier;J)Landroidx/compose/ui/Modifier;
+}
+
+public final class kabuki/semantics/ListSemanticsKt {
+	public static final fun getLazyListItemIndexKey ()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+	public static final fun getLazyListLengthKey ()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+	public static final fun testListItem (Landroidx/compose/ui/Modifier;I)Landroidx/compose/ui/Modifier;
+	public static final fun testListLength (Landroidx/compose/ui/Modifier;I)Landroidx/compose/ui/Modifier;
+}
+
+public final class kabuki/semantics/TestTagKt {
+	public static final fun getTagName (Ljava/lang/Enum;)Ljava/lang/String;
+	public static final fun getTestTagParamsKey ()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+	public static final fun testTag (Landroidx/compose/ui/Modifier;Ljava/lang/Enum;[Ljava/lang/Object;)Landroidx/compose/ui/Modifier;
+}
+

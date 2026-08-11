@@ -1,0 +1,38 @@
+[versions]
+# Bytecode level of the published artifacts, NOT the JDK used to build them.
+# 11 is the floor Compose Multiplatform desktop itself requires;
+# raising it would lock out consumers on an older JDK for no gain.
+jvmTarget = "11"
+kotlin = "2.4.10"
+compose = "1.11.0"
+composeMaterial3 = "1.9.0"
+agp = "8.13.2"
+androidCompileSdk = "37"
+androidMinSdk = "24"
+androidTargetSdk = "37"
+activityCompose = "1.12.4"
+coroutines = "1.10.2"
+binaryCompatibilityValidator = "0.16.3"
+androidxTestRunner = "1.6.2"
+androidxComposeUi = "1.11.1"
+
+[libraries]
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-desktop = { module = "org.jetbrains.compose.desktop:desktop", version.ref = "compose" }
+compose-uiTest = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
+compose-uiTestJunit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "compose" }
+androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-testRunner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-composeUiTestManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidxComposeUi" }
+kotlinx-coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+
+[plugins]
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
