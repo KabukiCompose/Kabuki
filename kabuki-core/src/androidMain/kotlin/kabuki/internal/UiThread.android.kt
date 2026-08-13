@@ -1,4 +1,4 @@
-package kabuki
+package kabuki.internal
 
 import android.os.Handler
 import android.os.Looper

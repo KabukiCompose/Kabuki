@@ -17,26 +17,6 @@ public final class kabuki/ClickViaSemanticsAction : kabuki/KabukiInterceptor {
 	public fun intercept (Lkabuki/InterceptedOperation;)V
 }
 
-public abstract class kabuki/Component : kabuki/NodeHost {
-	public static final field $stable I
-	public fun <init> ()V
-	public abstract fun getRoot ()Lkabuki/UiNode;
-	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
-}
-
-public final class kabuki/ConsoleListener : kabuki/KabukiListener {
-	public static final field $stable I
-	public fun <init> ()V
-	public fun <init> (ZZLkotlin/jvm/functions/Function1;)V
-	public synthetic fun <init> (ZZLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun onLog (Ljava/lang/String;)V
-	public fun onOperationFinish (Lkabuki/OperationInfo;Lkabuki/OperationResult;)V
-	public fun onStepFinish (Lkabuki/StepInfo;Lkabuki/StepResult;)V
-	public fun onStepStart (Lkabuki/StepInfo;)V
-	public fun onTestFinish (Lkabuki/TestInfo;Lkabuki/TestResult;)V
-	public fun onTestStart (Lkabuki/TestInfo;)V
-}
-
 public final class kabuki/InterceptedOperation {
 	public static final field $stable I
 	public final fun getName ()Ljava/lang/String;
@@ -72,28 +52,18 @@ public final class kabuki/KabukiConfig {
 	public final fun getMaxTreeDumpLines ()I
 	public final fun getPollingInterval-UwyO8pc ()J
 	public final fun getStrictListeners ()Z
-	public final fun getUseUnmergedTree ()Z
+	public final fun getTreeStrategy ()Lkabuki/TreeStrategy;
 	public final fun notifyListeners (Lkotlin/jvm/functions/Function1;)V
 	public final fun setDefaultTimeout-LRDsOJo (J)V
 	public final fun setDumpSemanticsTreeOnFailure (Z)V
 	public final fun setMaxTreeDumpLines (I)V
 	public final fun setPollingInterval-LRDsOJo (J)V
 	public final fun setStrictListeners (Z)V
-	public final fun setUseUnmergedTree (Z)V
+	public final fun setTreeStrategy (Lkabuki/TreeStrategy;)V
 }
 
 public abstract interface class kabuki/KabukiInterceptor {
 	public abstract fun intercept (Lkabuki/InterceptedOperation;)V
-}
-
-public abstract interface class kabuki/KabukiListener {
-	public fun onLog (Ljava/lang/String;)V
-	public fun onOperationFinish (Lkabuki/OperationInfo;Lkabuki/OperationResult;)V
-	public fun onOperationStart (Lkabuki/OperationInfo;)V
-	public fun onStepFinish (Lkabuki/StepInfo;Lkabuki/StepResult;)V
-	public fun onStepStart (Lkabuki/StepInfo;)V
-	public fun onTestFinish (Lkabuki/TestInfo;Lkabuki/TestResult;)V
-	public fun onTestStart (Lkabuki/TestInfo;)V
 }
 
 public final class kabuki/KabukiSkipException : java/lang/RuntimeException {
@@ -109,153 +79,23 @@ public final class kabuki/KabukiTestScope {
 	public final fun getContext ()Lkabuki/KabukiComposeContext;
 	public final fun getProfile ()Lkabuki/TestProfile;
 	public final fun log (Ljava/lang/String;)V
-	public final fun node (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/UiNode;
-	public final fun node (Ljava/lang/String;)Lkabuki/UiNode;
-	public final fun node (Lkotlin/jvm/functions/Function1;)Lkabuki/UiNode;
-	public final fun nodeAll (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/UiNodeCollection;
-	public final fun nodeAll (Ljava/lang/String;)Lkabuki/UiNodeCollection;
-	public final fun nodeAll (Lkotlin/jvm/functions/Function1;)Lkabuki/UiNodeCollection;
-	public final fun nodeWithText (Ljava/lang/String;Z)Lkabuki/UiNode;
-	public static synthetic fun nodeWithText$default (Lkabuki/KabukiTestScope;Ljava/lang/String;ZILjava/lang/Object;)Lkabuki/UiNode;
-	public final fun notifyTestFinish (Lkabuki/TestInfo;Lkabuki/TestResult;)V
-	public final fun notifyTestStart (Lkabuki/TestInfo;)V
+	public final fun node (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/page/UiNode;
+	public final fun node (Ljava/lang/String;)Lkabuki/page/UiNode;
+	public final fun node (Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNode;
+	public final fun nodeAll (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/page/UiNodeCollection;
+	public final fun nodeAll (Ljava/lang/String;)Lkabuki/page/UiNodeCollection;
+	public final fun nodeAll (Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNodeCollection;
+	public final fun nodeWithText (Ljava/lang/String;Z)Lkabuki/page/UiNode;
+	public static synthetic fun nodeWithText$default (Lkabuki/KabukiTestScope;Ljava/lang/String;ZILjava/lang/Object;)Lkabuki/page/UiNode;
+	public final fun notifyTestFinish (Lkabuki/listener/TestInfo;Lkabuki/listener/TestResult;)V
+	public final fun notifyTestStart (Lkabuki/listener/TestInfo;)V
 	public final fun setContent (Lkotlin/jvm/functions/Function2;)V
 	public final fun step (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
 }
 
-public final class kabuki/LazyList {
+public final class kabuki/KabukiUsageError : java/lang/IllegalStateException {
 	public static final field $stable I
-	public fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Ljava/util/Map;)V
-	public final fun assertLengthEquals (I)V
-	public final fun assertNotEmpty ()V
-	public final fun createItem (Lkotlin/reflect/KClass;I)Lkabuki/ListItem;
-	public final fun getDescription ()Ljava/lang/String;
-	public final fun getFactories ()Ljava/util/Map;
-	public final fun getListMatcher ()Landroidx/compose/ui/test/SemanticsMatcher;
-	public final fun getNode ()Lkabuki/UiNode;
-	public final fun getScopeProvider ()Lkotlin/jvm/functions/Function0;
-	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
-	public final fun itemMatcherAt (I)Landroidx/compose/ui/test/SemanticsMatcher;
-	public final fun itemNodeAt (I)Lkabuki/UiNode;
-	public final fun scrollToIndex (I)V
-	public final fun visibleItems ()Lkabuki/UiNodeCollection;
-}
-
-public final class kabuki/LazyListTypesBuilder {
-	public static final field $stable I
-	public fun <init> ()V
-	public final fun getFactories ()Ljava/util/Map;
-}
-
-public abstract class kabuki/ListItem {
-	public static final field $stable I
-	public fun <init> (Lkabuki/ListItemScope;)V
-	protected final fun child (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/UiNode;
-	protected final fun child (Lkotlin/jvm/functions/Function1;)Lkabuki/UiNode;
-	public final fun getIndex ()I
-	public final fun getItemScope ()Lkabuki/ListItemScope;
-	public final fun getNode ()Lkabuki/UiNode;
-}
-
-public final class kabuki/ListItemScope {
-	public static final field $stable I
-	public fun <init> (Lkabuki/KabukiTestScope;Landroidx/compose/ui/test/SemanticsMatcher;I)V
-	public final fun getIndex ()I
-	public final fun getItemMatcher ()Landroidx/compose/ui/test/SemanticsMatcher;
-	public final fun getTestScope ()Lkabuki/KabukiTestScope;
-}
-
-public abstract class kabuki/NodeHost {
-	public static final field $stable I
-	public fun <init> ()V
-	protected final fun component (Lkotlin/jvm/functions/Function0;)Lkabuki/Component;
-	protected final fun getScope ()Lkabuki/KabukiTestScope;
-	protected final fun lazyList (Ljava/lang/Enum;Lkotlin/jvm/functions/Function1;)Lkabuki/LazyList;
-	protected final fun lazyList (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lkabuki/LazyList;
-	public static synthetic fun lazyList$default (Lkabuki/NodeHost;Ljava/lang/Enum;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/LazyList;
-	public static synthetic fun lazyList$default (Lkabuki/NodeHost;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/LazyList;
-	protected final fun node (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/UiNode;
-	protected final fun node-dnQKTGw (Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;)Lkabuki/UiNode;
-	public static synthetic fun node-dnQKTGw$default (Lkabuki/NodeHost;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/UiNode;
-	protected final fun nodeAll (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/UiNodeCollection;
-	protected final fun nodeAll (Lkotlin/jvm/functions/Function1;)Lkabuki/UiNodeCollection;
-}
-
-public final class kabuki/NodeMatcherBuilder {
-	public static final field $stable I
-	public fun <init> ()V
-	public final fun buildDescription ()Ljava/lang/String;
-	public final fun buildMatcher ()Landroidx/compose/ui/test/SemanticsMatcher;
-	public final fun matching (Landroidx/compose/ui/test/SemanticsMatcher;)V
-	public final fun withAncestor (Lkotlin/jvm/functions/Function1;)V
-	public final fun withContentDescription (Ljava/lang/String;)V
-	public final fun withTag (Ljava/lang/Enum;[Ljava/lang/Object;)V
-	public final fun withTag (Ljava/lang/String;)V
-	public final fun withText (Ljava/lang/String;Z)V
-	public static synthetic fun withText$default (Lkabuki/NodeMatcherBuilder;Ljava/lang/String;ZILjava/lang/Object;)V
-}
-
-public final class kabuki/NodeMatcherBuilderKt {
-	public static final fun uiNode-Kx4hsE0 (Lkotlin/jvm/functions/Function0;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;)Lkabuki/UiNode;
-	public static synthetic fun uiNode-Kx4hsE0$default (Lkotlin/jvm/functions/Function0;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/UiNode;
-}
-
-public final class kabuki/OnScreenKt {
-	public static final fun onScreen (Lkabuki/KabukiTestScope;Lkabuki/Screen;Lkotlin/jvm/functions/Function1;)Lkabuki/Screen;
-	public static synthetic fun onScreen$default (Lkabuki/KabukiTestScope;Lkabuki/Screen;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/Screen;
-}
-
-public final class kabuki/OnScreen_jvmKt {
-	public static final fun instantiateScreen (Lkotlin/reflect/KClass;)Lkabuki/Screen;
-}
-
-public final class kabuki/OperationInfo {
-	public static final field $stable I
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lkabuki/OperationInfo;
-	public static synthetic fun copy$default (Lkabuki/OperationInfo;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lkabuki/OperationInfo;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getNode ()Ljava/lang/String;
-	public final fun getOperation ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class kabuki/OperationResult {
-	public abstract fun getAttempts ()I
-	public abstract fun getDuration-UwyO8pc ()J
-}
-
-public final class kabuki/OperationResult$Failed : kabuki/OperationResult {
-	public static final field $stable I
-	public synthetic fun <init> (Ljava/lang/Throwable;IJLkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Throwable;
-	public final fun component2 ()I
-	public final fun component3-UwyO8pc ()J
-	public final fun copy-SxA4cEA (Ljava/lang/Throwable;IJ)Lkabuki/OperationResult$Failed;
-	public static synthetic fun copy-SxA4cEA$default (Lkabuki/OperationResult$Failed;Ljava/lang/Throwable;IJILjava/lang/Object;)Lkabuki/OperationResult$Failed;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getAttempts ()I
-	public fun getDuration-UwyO8pc ()J
-	public final fun getError ()Ljava/lang/Throwable;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class kabuki/OperationResult$Succeeded : kabuki/OperationResult {
-	public static final field $stable I
-	public synthetic fun <init> (IJLkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2-UwyO8pc ()J
-	public final fun copy-HG0u8IE (IJ)Lkabuki/OperationResult$Succeeded;
-	public static synthetic fun copy-HG0u8IE$default (Lkabuki/OperationResult$Succeeded;IJILjava/lang/Object;)Lkabuki/OperationResult$Succeeded;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getAttempts ()I
-	public fun getDuration-UwyO8pc ()J
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public fun <init> (Ljava/lang/String;)V
 }
 
 public final class kabuki/Orientation : java/lang/Enum {
@@ -319,11 +159,12 @@ public final class kabuki/ScenarioKt {
 	public static final fun scenario (Lkabuki/KabukiTestScope;Lkabuki/Scenario;)V
 }
 
-public abstract class kabuki/Screen : kabuki/NodeHost {
-	public static final field $stable I
-	public fun <init> ()V
-	public abstract fun getRoot ()Lkabuki/UiNode;
-	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
+public final class kabuki/SearchKind : java/lang/Enum {
+	public static final field Content Lkabuki/SearchKind;
+	public static final field Structural Lkabuki/SearchKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lkabuki/SearchKind;
+	public static fun values ()[Lkabuki/SearchKind;
 }
 
 public final class kabuki/SizeClass : java/lang/Enum {
@@ -337,57 +178,6 @@ public final class kabuki/SizeClass : java/lang/Enum {
 
 public final class kabuki/SkipTest_jvmKt {
 	public static final fun skipTest (Ljava/lang/String;)Ljava/lang/Void;
-}
-
-public final class kabuki/StepInfo {
-	public static final field $stable I
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lkabuki/StepInfo;
-	public static synthetic fun copy$default (Lkabuki/StepInfo;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lkabuki/StepInfo;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDescription ()Ljava/lang/String;
-	public final fun getLabel ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class kabuki/StepResult {
-}
-
-public final class kabuki/StepResult$Failed : kabuki/StepResult {
-	public static final field $stable I
-	public fun <init> (Ljava/lang/Throwable;)V
-	public final fun component1 ()Ljava/lang/Throwable;
-	public final fun copy (Ljava/lang/Throwable;)Lkabuki/StepResult$Failed;
-	public static synthetic fun copy$default (Lkabuki/StepResult$Failed;Ljava/lang/Throwable;ILjava/lang/Object;)Lkabuki/StepResult$Failed;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Ljava/lang/Throwable;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class kabuki/StepResult$Passed : kabuki/StepResult {
-	public static final field $stable I
-	public static final field INSTANCE Lkabuki/StepResult$Passed;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class kabuki/TestInfo {
-	public static final field $stable I
-	public fun <init> (Ljava/lang/String;Lkabuki/TestProfile;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lkabuki/TestProfile;
-	public final fun copy (Ljava/lang/String;Lkabuki/TestProfile;)Lkabuki/TestInfo;
-	public static synthetic fun copy$default (Lkabuki/TestInfo;Ljava/lang/String;Lkabuki/TestProfile;ILjava/lang/Object;)Lkabuki/TestInfo;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getName ()Ljava/lang/String;
-	public final fun getProfile ()Lkabuki/TestProfile;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class kabuki/TestProfile {
@@ -416,36 +206,297 @@ public final class kabuki/TestProfile_jvmKt {
 	public static final fun detectOs ()Lkabuki/Os;
 }
 
-public abstract interface class kabuki/TestResult {
+public final class kabuki/Tree : java/lang/Enum {
+	public static final field Merged Lkabuki/Tree;
+	public static final field Unmerged Lkabuki/Tree;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lkabuki/Tree;
+	public static fun values ()[Lkabuki/Tree;
 }
 
-public final class kabuki/TestResult$Failed : kabuki/TestResult {
+public abstract interface class kabuki/TreeStrategy {
+	public static final field Companion Lkabuki/TreeStrategy$Companion;
+	public fun getContentFallback ()Z
+	public fun getContentSearch ()Lkabuki/Tree;
+	public fun getStructuralSearch ()Lkabuki/Tree;
+}
+
+public final class kabuki/TreeStrategy$Companion {
+	public final fun getAlwaysMerged ()Lkabuki/TreeStrategy;
+	public final fun getAlwaysUnmerged ()Lkabuki/TreeStrategy;
+	public final fun getSmart ()Lkabuki/TreeStrategy;
+}
+
+public final class kabuki/WindowSizeClass {
+	public static final field $stable I
+	public fun <init> (Lkabuki/SizeClass;Lkabuki/SizeClass;)V
+	public final fun component1 ()Lkabuki/SizeClass;
+	public final fun component2 ()Lkabuki/SizeClass;
+	public final fun copy (Lkabuki/SizeClass;Lkabuki/SizeClass;)Lkabuki/WindowSizeClass;
+	public static synthetic fun copy$default (Lkabuki/WindowSizeClass;Lkabuki/SizeClass;Lkabuki/SizeClass;ILjava/lang/Object;)Lkabuki/WindowSizeClass;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHeight ()Lkabuki/SizeClass;
+	public final fun getWidth ()Lkabuki/SizeClass;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/listener/ConsoleListener : kabuki/listener/KabukiListener {
+	public static final field $stable I
+	public fun <init> ()V
+	public fun <init> (ZZLkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (ZZLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun onLog (Ljava/lang/String;)V
+	public fun onOperationFinish (Lkabuki/listener/OperationInfo;Lkabuki/listener/OperationResult;)V
+	public fun onStepFinish (Lkabuki/listener/StepInfo;Lkabuki/listener/StepResult;)V
+	public fun onStepStart (Lkabuki/listener/StepInfo;)V
+	public fun onTestFinish (Lkabuki/listener/TestInfo;Lkabuki/listener/TestResult;)V
+	public fun onTestStart (Lkabuki/listener/TestInfo;)V
+}
+
+public abstract interface class kabuki/listener/KabukiListener {
+	public fun onLog (Ljava/lang/String;)V
+	public fun onOperationFinish (Lkabuki/listener/OperationInfo;Lkabuki/listener/OperationResult;)V
+	public fun onOperationStart (Lkabuki/listener/OperationInfo;)V
+	public fun onStepFinish (Lkabuki/listener/StepInfo;Lkabuki/listener/StepResult;)V
+	public fun onStepStart (Lkabuki/listener/StepInfo;)V
+	public fun onTestFinish (Lkabuki/listener/TestInfo;Lkabuki/listener/TestResult;)V
+	public fun onTestStart (Lkabuki/listener/TestInfo;)V
+}
+
+public final class kabuki/listener/OperationInfo {
+	public static final field $stable I
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lkabuki/listener/OperationInfo;
+	public static synthetic fun copy$default (Lkabuki/listener/OperationInfo;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lkabuki/listener/OperationInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNode ()Ljava/lang/String;
+	public final fun getOperation ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class kabuki/listener/OperationResult {
+	public abstract fun getAttempts ()I
+	public abstract fun getDuration-UwyO8pc ()J
+}
+
+public final class kabuki/listener/OperationResult$Failed : kabuki/listener/OperationResult {
+	public static final field $stable I
+	public synthetic fun <init> (Ljava/lang/Throwable;IJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun component2 ()I
+	public final fun component3-UwyO8pc ()J
+	public final fun copy-SxA4cEA (Ljava/lang/Throwable;IJ)Lkabuki/listener/OperationResult$Failed;
+	public static synthetic fun copy-SxA4cEA$default (Lkabuki/listener/OperationResult$Failed;Ljava/lang/Throwable;IJILjava/lang/Object;)Lkabuki/listener/OperationResult$Failed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAttempts ()I
+	public fun getDuration-UwyO8pc ()J
+	public final fun getError ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/listener/OperationResult$Succeeded : kabuki/listener/OperationResult {
+	public static final field $stable I
+	public synthetic fun <init> (IJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2-UwyO8pc ()J
+	public final fun copy-HG0u8IE (IJ)Lkabuki/listener/OperationResult$Succeeded;
+	public static synthetic fun copy-HG0u8IE$default (Lkabuki/listener/OperationResult$Succeeded;IJILjava/lang/Object;)Lkabuki/listener/OperationResult$Succeeded;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAttempts ()I
+	public fun getDuration-UwyO8pc ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/listener/StepInfo {
+	public static final field $stable I
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lkabuki/listener/StepInfo;
+	public static synthetic fun copy$default (Lkabuki/listener/StepInfo;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lkabuki/listener/StepInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getLabel ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class kabuki/listener/StepResult {
+}
+
+public final class kabuki/listener/StepResult$Failed : kabuki/listener/StepResult {
 	public static final field $stable I
 	public fun <init> (Ljava/lang/Throwable;)V
 	public final fun component1 ()Ljava/lang/Throwable;
-	public final fun copy (Ljava/lang/Throwable;)Lkabuki/TestResult$Failed;
-	public static synthetic fun copy$default (Lkabuki/TestResult$Failed;Ljava/lang/Throwable;ILjava/lang/Object;)Lkabuki/TestResult$Failed;
+	public final fun copy (Ljava/lang/Throwable;)Lkabuki/listener/StepResult$Failed;
+	public static synthetic fun copy$default (Lkabuki/listener/StepResult$Failed;Ljava/lang/Throwable;ILjava/lang/Object;)Lkabuki/listener/StepResult$Failed;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class kabuki/TestResult$Passed : kabuki/TestResult {
+public final class kabuki/listener/StepResult$Passed : kabuki/listener/StepResult {
 	public static final field $stable I
-	public static final field INSTANCE Lkabuki/TestResult$Passed;
+	public static final field INSTANCE Lkabuki/listener/StepResult$Passed;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class kabuki/UiNode {
+public final class kabuki/listener/TestInfo {
 	public static final field $stable I
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lkabuki/TestProfile;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lkabuki/TestProfile;
+	public final fun copy (Ljava/lang/String;Lkabuki/TestProfile;)Lkabuki/listener/TestInfo;
+	public static synthetic fun copy$default (Lkabuki/listener/TestInfo;Ljava/lang/String;Lkabuki/TestProfile;ILjava/lang/Object;)Lkabuki/listener/TestInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getProfile ()Lkabuki/TestProfile;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class kabuki/listener/TestResult {
+}
+
+public final class kabuki/listener/TestResult$Failed : kabuki/listener/TestResult {
+	public static final field $stable I
+	public fun <init> (Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lkabuki/listener/TestResult$Failed;
+	public static synthetic fun copy$default (Lkabuki/listener/TestResult$Failed;Ljava/lang/Throwable;ILjava/lang/Object;)Lkabuki/listener/TestResult$Failed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/listener/TestResult$Passed : kabuki/listener/TestResult {
+	public static final field $stable I
+	public static final field INSTANCE Lkabuki/listener/TestResult$Passed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class kabuki/page/Component : kabuki/page/NodeHost {
+	public static final field $stable I
+	public fun <init> ()V
+	public abstract fun getRoot ()Lkabuki/page/UiNode;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class kabuki/page/LazyList {
+	public static final field $stable I
+	public fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Ljava/util/Map;Lkabuki/page/NodeHost;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Ljava/util/Map;Lkabuki/page/NodeHost;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun assertLengthEquals (I)V
+	public final fun assertNotEmpty ()V
+	public final fun createItem (Lkotlin/reflect/KClass;I)Lkabuki/page/ListItem;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getFactories ()Ljava/util/Map;
+	public final fun getListMatcher ()Landroidx/compose/ui/test/SemanticsMatcher;
+	public final fun getNode ()Lkabuki/page/UiNode;
+	public final fun getScopeProvider ()Lkotlin/jvm/functions/Function0;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
+	public final fun itemMatcherAt (I)Landroidx/compose/ui/test/SemanticsMatcher;
+	public final fun itemNodeAt (I)Lkabuki/page/UiNode;
+	public final fun scrollToIndex (I)V
+	public final fun visibleItems ()Lkabuki/page/UiNodeCollection;
+}
+
+public final class kabuki/page/LazyListTypesBuilder {
+	public static final field $stable I
+	public fun <init> ()V
+	public final fun getFactories ()Ljava/util/Map;
+}
+
+public abstract class kabuki/page/ListItem {
+	public static final field $stable I
+	public fun <init> (Lkabuki/page/ListItemScope;)V
+	protected final fun child (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/page/UiNode;
+	protected final fun child (Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNode;
+	public final fun getIndex ()I
+	public final fun getItemScope ()Lkabuki/page/ListItemScope;
+	public final fun getNode ()Lkabuki/page/UiNode;
+	protected final fun node (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/page/UiNode;
+	protected final fun node (Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNode;
+}
+
+public final class kabuki/page/ListItemScope {
+	public static final field $stable I
+	public fun <init> (Lkabuki/KabukiTestScope;Landroidx/compose/ui/test/SemanticsMatcher;I)V
+	public final fun getIndex ()I
+	public final fun getItemMatcher ()Landroidx/compose/ui/test/SemanticsMatcher;
+	public final fun getTestScope ()Lkabuki/KabukiTestScope;
+}
+
+public abstract class kabuki/page/NodeHost {
+	public static final field $stable I
+	public fun <init> ()V
+	protected final fun component (Lkotlin/jvm/functions/Function0;)Lkabuki/page/Component;
+	protected final fun getScope ()Lkabuki/KabukiTestScope;
+	protected final fun lazyList (Ljava/lang/Enum;Lkotlin/jvm/functions/Function1;)Lkabuki/page/LazyList;
+	protected final fun lazyList (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lkabuki/page/LazyList;
+	public static synthetic fun lazyList$default (Lkabuki/page/NodeHost;Ljava/lang/Enum;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/page/LazyList;
+	public static synthetic fun lazyList$default (Lkabuki/page/NodeHost;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/page/LazyList;
+	protected final fun node (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/page/UiNode;
+	protected final fun node-dnQKTGw (Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNode;
+	public static synthetic fun node-dnQKTGw$default (Lkabuki/page/NodeHost;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/page/UiNode;
+	protected final fun nodeAll (Ljava/lang/Enum;[Ljava/lang/Object;)Lkabuki/page/UiNodeCollection;
+	protected final fun nodeAll (Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNodeCollection;
+}
+
+public final class kabuki/page/NodeMatcherBuilder {
+	public static final field $stable I
+	public fun <init> ()V
+	public final fun buildDescription ()Ljava/lang/String;
+	public final fun buildMatcher ()Landroidx/compose/ui/test/SemanticsMatcher;
+	public final fun matching (Landroidx/compose/ui/test/SemanticsMatcher;)V
+	public final fun withAncestor (Lkotlin/jvm/functions/Function1;)V
+	public final fun withContentDescription (Ljava/lang/String;)V
+	public final fun withTag (Ljava/lang/Enum;[Ljava/lang/Object;)V
+	public final fun withTag (Ljava/lang/String;)V
+	public final fun withText (Ljava/lang/String;Z)V
+	public static synthetic fun withText$default (Lkabuki/page/NodeMatcherBuilder;Ljava/lang/String;ZILjava/lang/Object;)V
+}
+
+public final class kabuki/page/NodeMatcherBuilderKt {
+	public static final fun uiNode-hhJSO8g (Lkotlin/jvm/functions/Function0;Lkotlin/time/Duration;Lkabuki/page/NodeHost;Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNode;
+	public static synthetic fun uiNode-hhJSO8g$default (Lkotlin/jvm/functions/Function0;Lkotlin/time/Duration;Lkabuki/page/NodeHost;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/page/UiNode;
+}
+
+public final class kabuki/page/OnScreenKt {
+	public static final fun onScreen (Lkabuki/KabukiTestScope;Lkabuki/page/Screen;Lkotlin/jvm/functions/Function1;)Lkabuki/page/Screen;
+	public static synthetic fun onScreen$default (Lkabuki/KabukiTestScope;Lkabuki/page/Screen;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/page/Screen;
+}
+
+public final class kabuki/page/OnScreen_jvmKt {
+	public static final fun instantiateScreen (Lkotlin/reflect/KClass;)Lkabuki/page/Screen;
+}
+
+public abstract class kabuki/page/Screen : kabuki/page/NodeHost {
+	public static final field $stable I
+	public fun <init> ()V
+	public fun getRoot ()Lkabuki/page/UiNode;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class kabuki/page/UiNode {
+	public static final field $stable I
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun assertBackgroundColor-8_81llA (J)V
 	public final fun assertContentDescriptionContains (Ljava/lang/String;ZZ)V
-	public static synthetic fun assertContentDescriptionContains$default (Lkabuki/UiNode;Ljava/lang/String;ZZILjava/lang/Object;)V
+	public static synthetic fun assertContentDescriptionContains$default (Lkabuki/page/UiNode;Ljava/lang/String;ZZILjava/lang/Object;)V
 	public final fun assertDoesNotExist ()V
 	public final fun assertExists ()V
 	public final fun assertHasClickAction ()V
@@ -462,12 +513,14 @@ public final class kabuki/UiNode {
 	public final fun assertIsSelected ()V
 	public final fun assertTextColor-8_81llA (J)V
 	public final fun assertTextContains (Ljava/lang/String;Z)V
-	public static synthetic fun assertTextContains$default (Lkabuki/UiNode;Ljava/lang/String;ZILjava/lang/Object;)V
+	public static synthetic fun assertTextContains$default (Lkabuki/page/UiNode;Ljava/lang/String;ZILjava/lang/Object;)V
 	public final fun assertTextEquals (Ljava/lang/String;)V
 	public final fun assertTintColor-8_81llA (J)V
 	public final fun clearText ()V
 	public final fun click ()V
 	public final fun doubleClick ()V
+	public final fun getMerged ()Lkabuki/page/UiNode;
+	public final fun getUnmerged ()Lkabuki/page/UiNode;
 	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
 	public final fun longClick ()V
 	public final fun raw (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
@@ -476,33 +529,19 @@ public final class kabuki/UiNode {
 	public final fun scrollToIndex (I)V
 	public final fun textStyle ()Landroidx/compose/ui/text/TextStyle;
 	public final fun typeText (Ljava/lang/String;)V
-	public final fun withTimeout-LRDsOJo (J)Lkabuki/UiNode;
+	public final fun withTimeout-LRDsOJo (J)Lkabuki/page/UiNode;
 }
 
-public final class kabuki/UiNodeCollection {
+public final class kabuki/page/UiNodeCollection {
 	public static final field $stable I
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Lkabuki/SearchKind;Lkabuki/page/NodeHost;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Lkabuki/SearchKind;Lkabuki/page/NodeHost;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun assertCountAtLeast (I)V
 	public final fun assertCountEquals (I)V
-	public final fun at (I)Lkabuki/UiNode;
+	public final fun at (I)Lkabuki/page/UiNode;
 	public final fun count ()I
-	public final fun first ()Lkabuki/UiNode;
+	public final fun first ()Lkabuki/page/UiNode;
 	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
-	public final fun withTimeout-LRDsOJo (J)Lkabuki/UiNodeCollection;
-}
-
-public final class kabuki/WindowSizeClass {
-	public static final field $stable I
-	public fun <init> (Lkabuki/SizeClass;Lkabuki/SizeClass;)V
-	public final fun component1 ()Lkabuki/SizeClass;
-	public final fun component2 ()Lkabuki/SizeClass;
-	public final fun copy (Lkabuki/SizeClass;Lkabuki/SizeClass;)Lkabuki/WindowSizeClass;
-	public static synthetic fun copy$default (Lkabuki/WindowSizeClass;Lkabuki/SizeClass;Lkabuki/SizeClass;ILjava/lang/Object;)Lkabuki/WindowSizeClass;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getHeight ()Lkabuki/SizeClass;
-	public final fun getWidth ()Lkabuki/SizeClass;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public final fun withTimeout-LRDsOJo (J)Lkabuki/page/UiNodeCollection;
 }
 

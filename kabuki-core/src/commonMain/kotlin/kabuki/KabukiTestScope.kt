@@ -4,6 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import kabuki.listener.KabukiListener
+import kabuki.listener.StepInfo
+import kabuki.listener.StepResult
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
+import kabuki.internal.CurrentTestScope
+import kabuki.page.NodeHost
+import kabuki.page.NodeMatcherBuilder
+import kabuki.page.UiNode
+import kabuki.page.UiNodeCollection
+import kabuki.page.tagAndParamsMatcher
+import kabuki.page.uiNode
 import kabuki.semantics.tagName
 
 /**
@@ -25,6 +37,32 @@ public class KabukiTestScope(
     private val onSetContent: ((content: @Composable () -> Unit) -> Unit)? = null,
 ) {
     private val stepCounters = mutableListOf(0)
+
+    /**
+     * Set once the runner reports the test as over. Read by page objects that
+     * outlive a single test (an `object` screen), so that a stale binding fails
+     * with an explanation instead of touching a scene that no longer exists.
+     */
+    internal var isFinished: Boolean = false
+        private set
+
+    private val boundHosts = mutableListOf<NodeHost>()
+
+    /** What was running on this thread before, so that nesting restores it. */
+    private val previousScope = CurrentTestScope.get()
+
+    init {
+        // Makes `PlaybillScreen { }` possible: an object screen has no way to be
+        // handed the scope, so it asks the thread which test is running.
+        // Declared AFTER the fields above - an init block runs in declaration
+        // order, and this one publishes `this` while the object is being built.
+        CurrentTestScope.set(this)
+    }
+
+    /** Page objects bound to this test, so that the binding can be dropped when it ends. */
+    internal fun registerBoundHost(host: NodeHost) {
+        boundHosts += host
+    }
 
     /** Installs the content into the headless scene (and, via the runner hook, into a visible window). */
     public fun setContent(content: @Composable () -> Unit) {
@@ -138,9 +176,33 @@ public class KabukiTestScope(
         notifyListeners { onTestStart(test) }
     }
 
-    /** For runner implementations: fires onTestFinish on all listeners. */
+    /**
+     * For runner implementations: fires onTestFinish on all listeners, once.
+     *
+     * A second call is ignored - a reporter must see one finished test, not one per
+     * call. Runners shipped with Kabuki report the outcome from a single place; the
+     * guard is here for anyone else's.
+     */
     public fun notifyTestFinish(test: TestInfo, result: TestResult) {
-        notifyOutcome((result as? TestResult.Failed)?.error) { onTestFinish(test, result) }
+        if (isFinished) {
+            return
+        }
+        // finally, because with strictListeners a broken listener throws right here
+        // - and skipping the cleanup would leave an `object` page object bound to a
+        // scene that is already gone, where the next operation HANGS rather than fails.
+        try {
+            notifyOutcome((result as? TestResult.Failed)?.error) { onTestFinish(test, result) }
+        } finally {
+            isFinished = true
+            // Let go of the page objects. A screen declared as `object` outlives the
+            // test, and holding this scope from it would keep the finished test's
+            // scene in memory until something binds over it.
+            boundHosts.forEach { host -> host.unbind() }
+            boundHosts.clear()
+            // Restore rather than clear: an inner scope (interop inside a Kabuki test,
+            // for instance) must not leave the outer test without a current scope.
+            CurrentTestScope.set(previousScope)
+        }
     }
 
     /**

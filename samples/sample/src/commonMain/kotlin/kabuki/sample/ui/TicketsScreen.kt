@@ -14,11 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import kabuki.sample.TheaterState
 import kabuki.semantics.testListItem
 import kabuki.semantics.testListLength
 import kabuki.semantics.testTag
-import androidx.compose.ui.unit.dp
-import kabuki.sample.TheaterState
 
 enum class TicketsTags {
     SCREEN,

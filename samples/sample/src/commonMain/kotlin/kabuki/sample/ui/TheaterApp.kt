@@ -14,10 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import kabuki.semantics.testTag
 import androidx.compose.ui.unit.dp
 import kabuki.sample.TheaterScreen
 import kabuki.sample.TheaterState
+import kabuki.semantics.testTag
 import kotlinx.coroutines.launch
 
 enum class NavTags {

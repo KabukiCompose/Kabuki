@@ -1,5 +1,7 @@
 package kabuki
 
+import kabuki.listener.ConsoleListener
+import kabuki.listener.KabukiListener
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -11,22 +13,22 @@ import kotlin.time.Duration.Companion.seconds
  */
 public class KabukiConfig {
 
-    /** How long an operation keeps retrying. One node overrides it with [UiNode.withTimeout]. */
+    /** How long an operation keeps retrying. One node overrides it with [kabuki.page.UiNode.withTimeout]. */
     public var defaultTimeout: Duration = 5.seconds
 
     /** Extra pause between retry attempts. ZERO retries on every rendered frame. */
     public var pollingInterval: Duration = Duration.ZERO
 
     /**
-     * Search the UNMERGED semantics tree: children keep their own tags instead of
-     * being folded into a clickable parent, which is what makes `child(...)`
-     * inside list items addressable at all.
+     * Which semantics tree each kind of search looks at. Deliberately not a single
+     * boolean: one switch answers two different questions and is wrong for half of
+     * them - see [TreeStrategy].
      */
-    public var useUnmergedTree: Boolean = true
+    public var treeStrategy: TreeStrategy = TreeStrategy.Smart
 
     /**
      * Interceptors replace HOW an operation is performed - which is what lets
-     * [UiNode.click] stay a single method with no strategy flags
+     * [kabuki.page.UiNode.click] stay a single method with no strategy flags
      * ([ClickOnUiThread], [ClickViaSemanticsAction]).
      */
     public val interceptors: MutableList<KabukiInterceptor> = mutableListOf()
@@ -95,12 +97,3 @@ public class KabukiConfig {
     }
 }
 
-/**
- * Failure of a Kabuki operation: the node description, the last underlying
- * error and - unless disabled via [KabukiConfig.dumpSemanticsTreeOnFailure] -
- * a dump of the semantics tree as it was at the moment of failure.
- *
- * An AssertionError on purpose: test frameworks treat it as a failed assertion
- * rather than a crashed test.
- */
-public class KabukiAssertionError(message: String, cause: Throwable? = null) : AssertionError(message, cause)

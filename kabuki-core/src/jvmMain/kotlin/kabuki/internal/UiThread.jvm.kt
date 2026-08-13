@@ -1,4 +1,4 @@
-package kabuki
+package kabuki.internal
 
 import javax.swing.SwingUtilities
 

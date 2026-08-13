@@ -11,9 +11,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import kabuki.semantics.testTag
 import androidx.compose.ui.test.onNodeWithTag
-import kabuki.Screen
+import kabuki.KabukiAssertionError
+import kabuki.listener.KabukiListener
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
+import kabuki.page.Screen
+import kabuki.semantics.testTag
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.time.Duration.Companion.milliseconds
 import org.junit.Rule
 import org.junit.Test
 
@@ -98,6 +105,35 @@ class InteropSelfTest : KabukiInterop {
     }
 
     @Test
+    fun theBlockFormReportsAWholeTestToListeners() {
+        composeRule.setContent { MiniApp() }
+        val recorder = TestEventRecorder()
+
+        composeRule.kabuki(name = "Interop with a lifecycle", config = { listeners += recorder }) {
+            step("Something happens") { node("mini_button").click() }
+        }
+
+        // Without these a reporter attached in interop sees loose steps with no
+        // test around them - the reason this form exists at all.
+        assertEquals(listOf("Interop with a lifecycle"), recorder.started)
+        assertEquals(listOf("Interop with a lifecycle" to true), recorder.finished)
+    }
+
+    @Test
+    fun theBlockFormReportsAFailingTestAndRethrows() {
+        composeRule.setContent { MiniApp() }
+        val recorder = TestEventRecorder()
+
+        assertFailsWith<KabukiAssertionError> {
+            composeRule.kabuki(name = "Interop failure", config = { listeners += recorder }) {
+                node("mini_counter").withTimeout(200.milliseconds).assertTextContains("Clicks: 99")
+            }
+        }
+
+        assertEquals(listOf("Interop failure" to false), recorder.finished)
+    }
+
+    @Test
     fun flatOnScreenViaMixin() {
         composeRule.setContent { MiniApp() }
 
@@ -107,6 +143,20 @@ class InteropSelfTest : KabukiInterop {
             button.click()
             counter.assertTextContains("Clicks: 2")
         }
+    }
+}
+
+/** Collects the test-level events the interop block form is expected to produce. */
+private class TestEventRecorder : KabukiListener {
+    val started: MutableList<String> = mutableListOf()
+    val finished: MutableList<Pair<String, Boolean>> = mutableListOf()
+
+    override fun onTestStart(test: TestInfo) {
+        started += test.name
+    }
+
+    override fun onTestFinish(test: TestInfo, result: TestResult) {
+        finished += test.name to (result is TestResult.Passed)
     }
 }
 

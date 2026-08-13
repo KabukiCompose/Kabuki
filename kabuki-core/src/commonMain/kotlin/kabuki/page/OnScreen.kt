@@ -1,5 +1,6 @@
-package kabuki
+package kabuki.page
 
+import kabuki.KabukiTestScope
 import kotlin.reflect.KClass
 
 /**
@@ -20,11 +21,15 @@ public inline fun <reified T : Screen<T>> KabukiTestScope.onScreen(noinline bloc
     return onScreen(screen, block)
 }
 
-/** [onScreen] overload for a manually constructed screen instance. */
+/**
+ * [onScreen] overload for a manually constructed screen instance, and the form to
+ * use for an `object` screen: `onScreen(PlaybillScreen) { }`.
+ *
+ * A screen without a root is entered without waiting - the first operation in the
+ * block does the waiting through its own retry.
+ */
 public fun <T : Screen<T>> KabukiTestScope.onScreen(screen: T, block: T.() -> Unit = {}): T {
-    screen.bind(this)
-    log("onScreen: ${screen::class.simpleName}")
-    screen.root.assertIsDisplayed()
+    screen.enter(this)
     screen.invoke(block)
     return screen
 }
@@ -33,7 +38,8 @@ public fun <T : Screen<T>> KabukiTestScope.onScreen(screen: T, block: T.() -> Un
  * Creates a screen instance by its class. Internal machinery for the reified
  * [onScreen] overload - not intended to be called directly.
  *
- * On JVM and Android the screen is instantiated via its public no-arg
- * constructor. A target without runtime reflection provides its own actual.
+ * On JVM and Android an `object` screen is taken as it is and a class is created
+ * through its public no-arg constructor. A target without runtime reflection
+ * provides its own actual.
  */
 public expect fun <T : Screen<T>> instantiateScreen(kClass: KClass<T>): T

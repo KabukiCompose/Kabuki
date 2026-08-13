@@ -1,6 +1,7 @@
 package kabuki.runner.selftest
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -36,8 +36,8 @@ import kabuki.semantics.testListItem
 import kabuki.semantics.testListLength
 import kabuki.semantics.testTag
 import kabuki.semantics.testTintColor
-import kotlinx.coroutines.delay
 import kotlin.concurrent.thread
+import kotlinx.coroutines.delay
 
 /**
  * Tags of the self-test screen, declared the way the library recommends: an enum,
@@ -67,7 +67,32 @@ enum class SelfTestTags {
     FAR_BLOCK,
     LAZY_LIST,
     LAZY_ITEM,
+
+    /** Clickable node whose text lives in a tagged child - the merged/unmerged probe. */
+    TREE_BUTTON,
+
+    /** Tag on the Text INSIDE [TREE_BUTTON]: present in the unmerged tree only. */
+    TREE_BUTTON_LABEL,
+
+    /** Text field WITH a label - the merged view of it mixes the label into the text. */
+    LABELED_INPUT,
+
+    /** Two panels with the SAME inner tags - the component scoping probe. */
+    PANEL,
+    PANEL_LABEL,
+    PANEL_GROUP,
+    PANEL_BUTTON,
+
+    /** A list inside each panel - same tags in both, so scoping has to tell them apart. */
+    PANEL_LIST,
+    PANEL_ITEM,
 }
+
+/** Text of [SelfTestTags.TREE_BUTTON_LABEL] - unique on the screen, searched for by content. */
+const val TREE_LABEL_TEXT: String = "Nested label"
+
+/** Label of [SelfTestTags.LABELED_INPUT] - deliberately never typed into the field. */
+const val LABELED_INPUT_LABEL: String = "Email address"
 
 /**
  * One element is tagged with a plain string on purpose: the string-based API is
@@ -89,6 +114,7 @@ class SelfTestAppState {
     var status by mutableStateOf("Idle")
     var delayedBlockVisible by mutableStateOf(false)
     var input by mutableStateOf("")
+    var labeledInput by mutableStateOf("")
 
     var checked by mutableStateOf(false)
     var selected by mutableStateOf(false)
@@ -164,6 +190,10 @@ fun SelfTestApp(state: SelfTestAppState) {
                 StatesAndGestures(state)
 
                 ScrollableArea()
+
+                TreeProbe(state)
+
+                ScopingProbe()
             }
         }
     }
@@ -226,6 +256,76 @@ private fun StatesAndGestures(state: SelfTestAppState) {
 
     // The string-tagged element - see LEGACY_STRING_TAG.
     Text(text = "Legacy", modifier = Modifier.testTag(LEGACY_STRING_TAG))
+}
+
+/**
+ * The one shape where the two semantics trees disagree: a clickable node whose
+ * text sits in a TAGGED child. In the merged tree the child is gone and its text
+ * belongs to the button; in the unmerged tree the child keeps both its tag and
+ * its text, and the button has no text at all.
+ */
+@Composable
+private fun TreeProbe(state: SelfTestAppState) {
+    Button(
+        onClick = { state.counter++ },
+        modifier = Modifier.testTag(SelfTestTags.TREE_BUTTON),
+    ) {
+        Text(
+            text = TREE_LABEL_TEXT,
+            modifier = Modifier.testTag(SelfTestTags.TREE_BUTTON_LABEL),
+        )
+    }
+
+    // Left empty on purpose: an assertion about the VALUE must not pass on the
+    // label, which the merged view of this field does contain.
+    TextField(
+        value = state.labeledInput,
+        onValueChange = { state.labeledInput = it },
+        label = { Text(LABELED_INPUT_LABEL) },
+        modifier = Modifier.testTag(SelfTestTags.LABELED_INPUT),
+    )
+}
+
+/**
+ * Two panels that are identical inside: same label tag, same group tag, same
+ * button tag. Only the panel's own tag parameter tells them apart, so anything
+ * addressed without scoping matches twice and cannot be resolved at all.
+ */
+@Composable
+private fun ScopingProbe() {
+    Row {
+        Panel(side = "left")
+        Panel(side = "right")
+    }
+}
+
+@Composable
+private fun Panel(side: String) {
+    Column(modifier = Modifier.testTag(SelfTestTags.PANEL, side)) {
+        Text(text = side, modifier = Modifier.testTag(SelfTestTags.PANEL_LABEL))
+        Column(modifier = Modifier.testTag(SelfTestTags.PANEL_GROUP)) {
+            Button(
+                onClick = {},
+                modifier = Modifier.testTag(SelfTestTags.PANEL_BUTTON),
+            ) {
+                Text("Tap $side")
+            }
+        }
+        LazyColumn(
+            modifier = Modifier
+                .height(40.dp)
+                .testTag(SelfTestTags.PANEL_LIST),
+        ) {
+            items(2) { index ->
+                Text(
+                    text = "$side item $index",
+                    modifier = Modifier
+                        .testListItem(index)
+                        .testTag(SelfTestTags.PANEL_ITEM),
+                )
+            }
+        }
+    }
 }
 
 /**

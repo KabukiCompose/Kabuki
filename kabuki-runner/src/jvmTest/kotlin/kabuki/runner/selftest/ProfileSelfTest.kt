@@ -1,20 +1,24 @@
 package kabuki.runner.selftest
 
-import kabuki.KabukiListener
-import kabuki.OperationInfo
 import kabuki.Orientation
 import kabuki.Os
 import kabuki.Profiles
 import kabuki.SizeClass
-import kabuki.StepInfo
-import kabuki.TestInfo
 import kabuki.assumeOs
+import kabuki.assumeSizeClass
 import kabuki.detectOs
+import kabuki.listener.KabukiListener
+import kabuki.listener.OperationInfo
+import kabuki.listener.StepInfo
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
 import kabuki.os
 import kabuki.runner.WindowMode
 import kabuki.runner.runDesktopTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -52,6 +56,59 @@ class ProfileSelfTest {
             macos = { branch = Os.MacOs },
         )
         assertEquals(detectOs(), branch)
+    }
+
+    @Test
+    fun osForkWithoutABranchForTheCurrentOsFails() = runDesktopTest(
+        name = "os() fork without a branch",
+        window = WindowMode.Headless,
+    ) {
+        // The dangerous failure mode is the quiet one: a fork that silently does
+        // nothing skips the checks inside it and leaves the test green.
+        val error = assertFailsWith<IllegalStateException> {
+            os(web = { error("desktop is never Browser") })
+        }
+
+        assertTrue(
+            "has no branch" in error.message.orEmpty(),
+            "The fork must say which OS it has no branch for: ${error.message}",
+        )
+    }
+
+    @Test
+    fun assumeOsDoesNotSkipOnTheCurrentOs() = runDesktopTest(
+        name = "assumeOs no skip",
+        window = WindowMode.Headless,
+    ) {
+        // Caught here on purpose. If the skip were let through, this test would be
+        // reported as SKIPPED - which reads as green, so nothing would ever notice
+        // an assumeOs that skips unconditionally and silently disables suites.
+        val skip = runCatching { assumeOs(detectOs()) }.exceptionOrNull()
+
+        assertNull(skip, "assumeOs must not skip when the current OS is allowed, got: $skip")
+    }
+
+    @Test
+    fun assumeSizeClassDoesNotSkipOnTheCurrentSizeClass() = runDesktopTest(
+        name = "assumeSizeClass no skip",
+        profile = Profiles.Desktop.SmallHd,
+        window = WindowMode.Headless,
+    ) {
+        val skip = runCatching { assumeSizeClass(profile.sizeClass.width) }.exceptionOrNull()
+
+        assertNull(skip, "assumeSizeClass must not skip when the size class matches, got: $skip")
+    }
+
+    @Test
+    fun assumeSizeClassSkipsOnAForeignSizeClass() = runDesktopTest(
+        name = "assumeSizeClass skip",
+        profile = Profiles.Desktop.SmallHd,
+        window = WindowMode.Headless,
+    ) {
+        val other = SizeClass.entries.first { size -> size != profile.sizeClass.width }
+        val skip = runCatching { assumeSizeClass(other) }.exceptionOrNull()
+
+        assertTrue(skip != null, "assumeSizeClass must skip when the size class does not match")
     }
 
     @Test
@@ -131,7 +188,7 @@ private class RecordingListener : KabukiListener {
         messages += message
     }
 
-    override fun onTestFinish(test: TestInfo, result: kabuki.TestResult) {
+    override fun onTestFinish(test: TestInfo, result: TestResult) {
         finishedTests += test.name
     }
 }

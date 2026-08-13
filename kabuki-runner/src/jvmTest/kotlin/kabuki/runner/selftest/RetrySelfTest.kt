@@ -2,7 +2,6 @@ package kabuki.runner.selftest
 
 import kabuki.ClickViaSemanticsAction
 import kabuki.KabukiAssertionError
-
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -65,7 +64,9 @@ class RetrySelfTest : SelfTestCase() {
 
         assertTrue("Expected substring: 'Text that is not there'" in error.message.orEmpty())
         assertTrue("Actual text: 'Kabuki SelfTest'" in error.message.orEmpty())
-        assertTrue("Semantics tree at the moment of failure:" in error.message.orEmpty())
+        // The dump names its tree: the same UI printed from the other tree looks
+        // different enough to send the reader down the wrong path.
+        assertTrue("Semantics tree (unmerged) at the moment of failure:" in error.message.orEmpty())
     }
 
     @Test

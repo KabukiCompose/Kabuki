@@ -1,4 +1,4 @@
-package kabuki
+package kabuki.page
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
@@ -6,6 +6,8 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import kabuki.KabukiTestScope
+import kabuki.SearchKind
 import kabuki.semantics.TestTagParamsKey
 import kabuki.semantics.tagName
 import kotlin.time.Duration
@@ -31,8 +33,26 @@ public class NodeMatcherBuilder {
     internal var diagnosticParams: List<String> = emptyList()
         private set
 
+    private var hasStructuralCondition = false
+    private var hasContentCondition = false
+
+    /**
+     * Content search only when nothing structural was asked for. A tag means the
+     * node was marked for tests and must be found where the marking lives; adding
+     * text on top of it narrows the choice rather than changing how it is addressed.
+     */
+    internal val searchKind: SearchKind
+        get() {
+            return if (hasContentCondition && !hasStructuralCondition) {
+                SearchKind.Content
+            } else {
+                SearchKind.Structural
+            }
+        }
+
     /** Raw string tag. Prefer the enum overload where the tag is yours to change. */
     public fun withTag(tag: String) {
+        hasStructuralCondition = true
         append(hasTestTag(tag), "tag '$tag'")
     }
 
@@ -48,6 +68,7 @@ public class NodeMatcherBuilder {
      */
     public fun withTag(tag: Enum<*>, vararg params: Any) {
         val values = params.map { param -> param.toString() }
+        hasStructuralCondition = true
         diagnosticTag = tag.tagName
         diagnosticParams = values
         if (values.isEmpty()) {
@@ -60,13 +81,20 @@ public class NodeMatcherBuilder {
         )
     }
 
-    /** Matches by visible text. [substring] defaults to false here - an exact match. */
+    /**
+     * Matches by visible text. [substring] defaults to false here - an exact match.
+     *
+     * On its own this searches the MERGED tree, so the node you get is the button
+     * or card carrying the text rather than the Text inside it - see [kabuki.TreeStrategy].
+     */
     public fun withText(text: String, substring: Boolean = false) {
+        hasContentCondition = true
         append(hasText(text, substring = substring), "text '$text'")
     }
 
     /** Matches by content description - the accessibility label, exact match. */
     public fun withContentDescription(description: String) {
+        hasContentCondition = true
         append(hasContentDescription(description), "contentDescription '$description'")
     }
 
@@ -106,6 +134,7 @@ public class NodeMatcherBuilder {
 public fun uiNode(
     scopeProvider: () -> KabukiTestScope,
     timeout: Duration? = null,
+    host: NodeHost? = null,
     build: NodeMatcherBuilder.() -> Unit,
 ): UiNode {
     val builder = NodeMatcherBuilder().apply(build)
@@ -116,6 +145,8 @@ public fun uiNode(
         timeout = timeout,
         diagnosticTag = builder.diagnosticTag,
         diagnosticParams = builder.diagnosticParams,
+        searchKind = builder.searchKind,
+        host = host,
     )
 }
 

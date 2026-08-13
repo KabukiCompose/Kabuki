@@ -1,10 +1,14 @@
-package kabuki
+package kabuki.page
 
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
+import kabuki.KabukiAssertionError
+import kabuki.KabukiTestScope
+import kabuki.Tree
+import kabuki.internal.runOperation
 import kabuki.semantics.LazyListItemIndexKey
-import androidx.compose.ui.semantics.getOrNull
 import kabuki.semantics.LazyListLengthKey
 import kotlin.reflect.KClass
 
@@ -48,7 +52,11 @@ public abstract class ListItem(
             return itemScope.index
         }
 
-    protected fun child(build: NodeMatcherBuilder.() -> Unit): UiNode {
+    /**
+     * Declares an element of this item, searched INSIDE it. Same rule as in a
+     * [Component]: `node` looks inside its own container wherever one exists.
+     */
+    protected fun node(build: NodeMatcherBuilder.() -> Unit): UiNode {
         val builder = NodeMatcherBuilder().apply(build)
         return UiNode(
             scopeProvider = { itemScope.testScope },
@@ -56,11 +64,22 @@ public abstract class ListItem(
             description = "${builder.buildDescription()} in list item #${itemScope.index}",
             diagnosticTag = builder.diagnosticTag,
             diagnosticParams = builder.diagnosticParams,
+            searchKind = builder.searchKind,
         )
     }
 
+    protected fun node(tag: Enum<*>, vararg params: Any): UiNode {
+        return node { withTag(tag, *params) }
+    }
+
+    /** Synonym of [node], kept because "child" reads well inside an item. */
+    protected fun child(build: NodeMatcherBuilder.() -> Unit): UiNode {
+        return node(build)
+    }
+
+    /** Synonym of [node]. */
     protected fun child(tag: Enum<*>, vararg params: Any): UiNode {
-        return child { withTag(tag, *params) }
+        return node(tag, *params)
     }
 }
 
@@ -101,9 +120,20 @@ public class LazyList(
     @PublishedApi internal val listMatcher: SemanticsMatcher,
     @PublishedApi internal val description: String,
     @PublishedApi internal val factories: Map<KClass<out ListItem>, (ListItemScope) -> ListItem>,
+    private val host: NodeHost? = null,
 ) {
     /** The list container node: assert visibility, scroll, raw access. */
-    public val node: UiNode = UiNode(scopeProvider, listMatcher, description)
+    public val node: UiNode = UiNode(scopeProvider, listMatcher, description, host = host)
+
+    /**
+     * The list matcher plus the container of the page object it belongs to - two
+     * identical lists in two identical components stay apart. Items match against
+     * this, not against the bare list matcher.
+     */
+    private fun effectiveListMatcher(): SemanticsMatcher {
+        val container = host?.containerFor(node = null) ?: return listMatcher
+        return listMatcher.and(hasAnyAncestor(container))
+    }
 
     /** Scoped block over the list: `reviews { assertNotEmpty(); assertLengthEquals(30) }`. */
     public operator fun invoke(block: LazyList.() -> Unit) {
@@ -152,8 +182,11 @@ public class LazyList(
                 )
             },
         ) {
+            // The list is addressed by its tag, so the structural tree it is -
+            // the published length lives on the node that was marked.
+            val unmerged = scope.config.treeStrategy.structuralSearch == Tree.Unmerged
             val published = scope.context
-                .onNode(listMatcher, useUnmergedTree = scope.config.useUnmergedTree)
+                .onNode(effectiveListMatcher(), useUnmergedTree = unmerged)
                 .fetchSemanticsNode()
                 .config
                 .getOrNull(LazyListLengthKey)
@@ -213,10 +246,12 @@ public class LazyList(
 
     @PublishedApi
     internal fun itemMatcherAt(index: Int): SemanticsMatcher {
-        return SemanticsMatcher.expectValue(LazyListItemIndexKey, index).and(hasAnyAncestor(listMatcher))
+        return SemanticsMatcher.expectValue(LazyListItemIndexKey, index)
+            .and(hasAnyAncestor(effectiveListMatcher()))
     }
 
     private fun anyItemMatcher(): SemanticsMatcher {
-        return SemanticsMatcher.keyIsDefined(LazyListItemIndexKey).and(hasAnyAncestor(listMatcher))
+        return SemanticsMatcher.keyIsDefined(LazyListItemIndexKey)
+            .and(hasAnyAncestor(effectiveListMatcher()))
     }
 }

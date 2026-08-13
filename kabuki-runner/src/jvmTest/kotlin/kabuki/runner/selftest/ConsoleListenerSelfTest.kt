@@ -1,13 +1,13 @@
-﻿package kabuki.runner.selftest
+package kabuki.runner.selftest
 
-import kabuki.ConsoleListener
-import kabuki.OperationInfo
-import kabuki.OperationResult
 import kabuki.Profiles
-import kabuki.StepInfo
-import kabuki.StepResult
-import kabuki.TestInfo
-import kabuki.TestResult
+import kabuki.listener.ConsoleListener
+import kabuki.listener.OperationInfo
+import kabuki.listener.OperationResult
+import kabuki.listener.StepInfo
+import kabuki.listener.StepResult
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

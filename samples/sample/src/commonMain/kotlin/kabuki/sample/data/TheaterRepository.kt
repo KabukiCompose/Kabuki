@@ -2,8 +2,8 @@ package kabuki.sample.data
 
 import kabuki.sample.model.Genre
 import kabuki.sample.model.Performance
-import kabuki.sample.model.Seat
 import kabuki.sample.model.Review
+import kabuki.sample.model.Seat
 import kabuki.sample.model.Ticket
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers

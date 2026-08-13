@@ -1,7 +1,14 @@
-package kabuki
+package kabuki.page
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
+import kabuki.KabukiAssertionError
+import kabuki.KabukiTestScope
+import kabuki.SearchKind
+import kabuki.Tree
+import kabuki.internal.runOperation
+import kabuki.treeFor
 import kotlin.time.Duration
 
 /**
@@ -18,17 +25,25 @@ public class UiNodeCollection(
     private val matcher: SemanticsMatcher,
     private val description: String,
     private val timeout: Duration? = null,
+    private val searchKind: SearchKind = SearchKind.Structural,
+    private val host: NodeHost? = null,
 ) {
     private val scope: KabukiTestScope get() = scopeProvider()
+
+    /** The declared matcher plus the container of the page object it belongs to. */
+    private fun effectiveMatcher(): SemanticsMatcher {
+        val container = host?.containerFor(node = null) ?: return matcher
+        return matcher.and(hasAnyAncestor(container))
+    }
 
     /** Scoped block over the collection: `cards { assertCountEquals(6); first().click() }`. */
     public operator fun invoke(block: UiNodeCollection.() -> Unit) {
         block()
     }
 
-    /** A copy of this collection with its own timeout, overriding [KabukiConfig.defaultTimeout]. */
+    /** A copy of this collection with its own timeout, overriding [kabuki.KabukiConfig.defaultTimeout]. */
     public fun withTimeout(timeout: Duration): UiNodeCollection {
-        return UiNodeCollection(scopeProvider, matcher, description, timeout)
+        return UiNodeCollection(scopeProvider, matcher, description, timeout, searchKind, host)
     }
 
     /** Node at [index] within the matched collection. All UiNode operations apply. */
@@ -39,6 +54,8 @@ public class UiNodeCollection(
             description = "$description[#$index]",
             timeout = timeout,
             indexInCollection = index,
+            searchKind = searchKind,
+            host = host,
         )
     }
 
@@ -49,8 +66,9 @@ public class UiNodeCollection(
 
     /** Current number of matched nodes - an instant snapshot, no retry. */
     public fun count(): Int {
+        val unmerged = scope.config.treeStrategy.treeFor(searchKind) == Tree.Unmerged
         return scope.context
-            .onAllNodes(matcher, useUnmergedTree = scope.config.useUnmergedTree)
+            .onAllNodes(effectiveMatcher(), useUnmergedTree = unmerged)
             .fetchSemanticsNodes()
             .size
     }

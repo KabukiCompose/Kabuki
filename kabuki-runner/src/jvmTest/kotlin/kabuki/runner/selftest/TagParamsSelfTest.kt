@@ -12,9 +12,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kabuki.KabukiAssertionError
-import kabuki.Screen
-import kabuki.UiNode
-import kabuki.onScreen
+import kabuki.page.Screen
+import kabuki.page.UiNode
+import kabuki.page.onScreen
 import kabuki.runner.WindowMode
 import kabuki.runner.runDesktopTest
 import kabuki.semantics.testTag

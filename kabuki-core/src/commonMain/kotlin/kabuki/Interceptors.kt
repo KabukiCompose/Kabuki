@@ -5,15 +5,15 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
+import kabuki.internal.runOnUiThread
 
 /**
  * Wraps every node operation and can replace HOW it is performed.
  *
  * An interceptor either calls [InterceptedOperation.proceed] to run the original
- * operation, or does something else instead. This is what keeps the public API
- * free of variants: there is one [UiNode.click], and a project that needs a
- * different way of clicking installs an interceptor once instead of passing a
- * flag at every call site.
+ * operation, or does something else instead. That keeps the public API free of
+ * variants: there is one [kabuki.page.UiNode.click], and a project needing another
+ * way to click installs an interceptor once instead of passing a flag everywhere.
  *
  * ```kotlin
  * runKabukiTest(config = { interceptors += ClickViaSemanticsAction() }) { ... }
@@ -24,9 +24,8 @@ import androidx.compose.ui.test.performSemanticsAction
  */
 public fun interface KabukiInterceptor {
     /**
-     * Called instead of the operation. Call [InterceptedOperation.proceed] to run
-     * the rest of the chain (and finally the original operation), or do something
-     * else entirely to replace it.
+     * Called instead of the operation. [InterceptedOperation.proceed] runs the rest
+     * of the chain and then the original; skip it to replace the operation.
      */
     public fun intercept(operation: InterceptedOperation)
 }
@@ -65,7 +64,7 @@ public class InterceptedOperation internal constructor(
     }
 }
 
-/** Operation name of [UiNode.click] - the one interceptors below react to. */
+/** Operation name of [kabuki.page.UiNode.click] - the one interceptors below react to. */
 internal const val CLICK_OPERATION: String = "click"
 
 /**

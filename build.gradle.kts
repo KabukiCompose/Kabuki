@@ -1,5 +1,7 @@
 import org.gradle.api.publish.maven.MavenPom
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
@@ -14,6 +16,8 @@ plugins {
 
 // Read here: the `libs` accessor is not available inside allprojects { }.
 val jvmTargetVersion = libs.versions.jvmTarget.get()
+val kotlinLanguageVersion = KotlinVersion.fromVersion(libs.versions.kotlinLanguage.get())
+val kotlinCoreLibrariesVersion = libs.versions.kotlinCoreLibraries.get()
 val repoUrl = "https://github.com/KabukiCompose/Kabuki"
 
 allprojects {
@@ -37,6 +41,14 @@ allprojects {
     tasks.withType<KotlinCompilationTask<*>>().configureEach {
         compilerOptions {
             allWarningsAsErrors.set(!providers.gradleProperty("allowWarnings").isPresent)
+
+            // languageVersion decides the metadata version of the artifacts, so
+            // building with a newer compiler silently locks out consumers still
+            // on an older Kotlin. apiVersion follows it to keep us off stdlib
+            // that those consumers do not have yet. Applied to the samples too -
+            // they are the closest thing we have to a consumer.
+            languageVersion.set(kotlinLanguageVersion)
+            apiVersion.set(kotlinLanguageVersion)
         }
     }
 
@@ -60,6 +72,15 @@ allprojects {
     tasks.withType<JavaCompile>().configureEach {
         sourceCompatibility = jvmTargetVersion
         targetCompatibility = jvmTargetVersion
+    }
+
+    // The other half of languageVersion: the compiler stamps our metadata, this
+    // decides which stdlib we drag into the consumer's graph. Both must name the
+    // same Kotlin, or the pair is only half a promise.
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<KotlinProjectExtension> {
+            coreLibrariesVersion = kotlinCoreLibrariesVersion
+        }
     }
 
     // Reactive, so modules that never publish (samples) stay untouched.

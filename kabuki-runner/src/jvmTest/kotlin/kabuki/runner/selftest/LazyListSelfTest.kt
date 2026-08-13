@@ -1,10 +1,10 @@
 package kabuki.runner.selftest
 
 import kabuki.KabukiAssertionError
-import kabuki.ListItem
-import kabuki.ListItemScope
-import kabuki.Screen
-import kabuki.onScreen
+import kabuki.page.ListItem
+import kabuki.page.ListItemScope
+import kabuki.page.Screen
+import kabuki.page.onScreen
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -13,7 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Self-test for lazy list assertions.
  *
- * [kabuki.LazyList.assertLengthEquals] reads the length published by production
+ * [kabuki.page.LazyList.assertLengthEquals] reads the length published by production
  * code, so it has to fail when the numbers disagree. A happy-path test alone
  * would keep passing even if the assertion stopped asserting altogether - hence
  * the negative case below.

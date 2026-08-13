@@ -1,13 +1,13 @@
 package kabuki.sample.screens
 
-import kabuki.UiNode
-import kabuki.ListItem
-import kabuki.ListItemScope
-import kabuki.Screen
-import kabuki.sample.ui.PlaybillTags
+import kabuki.page.ListItem
+import kabuki.page.ListItemScope
+import kabuki.page.Screen
+import kabuki.page.UiNode
 import kabuki.sample.model.Genre
+import kabuki.sample.ui.PlaybillTags
 
-class PlaybillScreen : Screen<PlaybillScreen>() {
+object PlaybillScreen : Screen<PlaybillScreen>() {
 
     override val root = node(PlaybillTags.SCREEN)
 
@@ -41,6 +41,6 @@ class PlaybillScreen : Screen<PlaybillScreen>() {
 }
 
 class PerformanceCardItem(scope: ListItemScope) : ListItem(scope) {
-    val title = child(PlaybillTags.CARD_TITLE)
-    val price = child(PlaybillTags.CARD_PRICE)
+    val title = node(PlaybillTags.CARD_TITLE)
+    val price = node(PlaybillTags.CARD_PRICE)
 }

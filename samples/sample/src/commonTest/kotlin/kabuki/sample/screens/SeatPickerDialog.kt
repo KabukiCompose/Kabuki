@@ -1,9 +1,9 @@
 package kabuki.sample.screens
 
-import kabuki.UiNode
-import kabuki.ListItem
-import kabuki.ListItemScope
-import kabuki.Screen
+import kabuki.page.ListItem
+import kabuki.page.ListItemScope
+import kabuki.page.Screen
+import kabuki.page.UiNode
 import kabuki.sample.ui.ConfirmTags
 import kabuki.sample.ui.SeatTags
 

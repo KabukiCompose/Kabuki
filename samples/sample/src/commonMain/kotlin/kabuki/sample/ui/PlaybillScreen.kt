@@ -33,13 +33,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import kabuki.semantics.testListItem
-import kabuki.semantics.testListLength
-import kabuki.semantics.testTag
 import androidx.compose.ui.unit.dp
 import kabuki.sample.TheaterState
 import kabuki.sample.model.Genre
 import kabuki.sample.model.Performance
+import kabuki.semantics.testListItem
+import kabuki.semantics.testListLength
+import kabuki.semantics.testTag
 
 /** Placeholder cards shown while the playbill loads. */
 private const val SHIMMER_CARD_COUNT = 6

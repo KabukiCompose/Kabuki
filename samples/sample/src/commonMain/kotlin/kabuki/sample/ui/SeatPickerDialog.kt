@@ -26,9 +26,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import kabuki.semantics.testListItem
-import kabuki.semantics.testListLength
-import kabuki.semantics.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -36,6 +33,9 @@ import kabuki.sample.data.TheaterRepository
 import kabuki.sample.model.Performance
 import kabuki.sample.model.Seat
 import kabuki.sample.model.Ticket
+import kabuki.semantics.testListItem
+import kabuki.semantics.testListLength
+import kabuki.semantics.testTag
 import kotlinx.coroutines.launch
 
 enum class SeatTags {

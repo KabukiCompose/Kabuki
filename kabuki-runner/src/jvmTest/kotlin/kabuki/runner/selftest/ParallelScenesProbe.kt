@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import kabuki.page.Screen
 import kabuki.runner.runKabukiTest
 import kotlin.concurrent.thread
 import kotlin.test.Test
@@ -15,16 +16,12 @@ import kotlin.test.assertTrue
  * inside ONE JVM.
  *
  * Kabuki holds no global state - the scope travels through scopeProvider - so
- * parallel tests depend entirely on Compose. If a future version of the desktop
- * test scene starts keeping anything static (a scene registry, the clock, the
- * dispatcher), parallel execution stops working no matter how clean our own
- * architecture is. These tests exist to notice that immediately rather than
- * after the feature is promised to users.
+ * parallel tests depend entirely on Compose. Should a future desktop test scene
+ * keep anything static (a scene registry, the clock, the dispatcher), parallel
+ * execution stops working regardless of our own architecture.
  *
- * Threads speed the suite up several times over. Process-level parallelism, on
- * the other hand, is a net loss: every forked JVM re-initialises Skiko from
- * scratch, which costs more than the parallelism saves. That is why the build
- * deliberately does not set maxParallelForks.
+ * Measured: threads speed the suite up several times over, while forked JVMs are
+ * a net loss - each one re-initialises Skiko. Hence no maxParallelForks.
  */
 class ParallelScenesProbe {
 
@@ -62,6 +59,40 @@ class ParallelScenesProbe {
     }
 
     @Test
+    fun parallelThreadsShareOneObjectScreen() {
+        // The point of the thread-local binding: ONE singleton page object, four
+        // tests, four scenes. A binding kept in a plain field would hand a thread
+        // the scene of another one, and the text would not match.
+        val errors = mutableListOf<Throwable>()
+        val threads = (1..4).map { index ->
+            thread {
+                val text = "shared-$index"
+                try {
+                    runKabukiTest(name = "parallel object screen: $text") {
+                        setContent {
+                            Column {
+                                BasicText(text = text, modifier = Modifier.testTag("probe_text"))
+                            }
+                        }
+                        repeat(20) {
+                            SharedProbeScreen { probeText.assertTextContains(text) }
+                        }
+                    }
+                } catch (e: Throwable) {
+                    synchronized(errors) { errors += e }
+                }
+            }
+        }
+        threads.forEach { it.join() }
+
+        assertEquals(
+            emptyList(),
+            errors.map { "${it::class.simpleName}: ${it.message?.lineSequence()?.firstOrNull()}" },
+            "A shared object screen must not leak between parallel tests",
+        )
+    }
+
+    @Test
     fun fourScenesInParallelThreads() {
         val errors = mutableListOf<Throwable>()
         val threads = (1..4).map { index ->
@@ -81,5 +112,9 @@ class ParallelScenesProbe {
             "Parallel scenes failed",
         )
     }
+}
 
+/** One page object for every thread - the probe for the per-thread binding. */
+private object SharedProbeScreen : Screen<SharedProbeScreen>() {
+    val probeText = node { withTag("probe_text") }
 }

@@ -1,9 +1,13 @@
 [versions]
-# Bytecode level of the published artifacts, NOT the JDK used to build them.
-# 11 is the floor Compose Multiplatform desktop itself requires;
-# raising it would lock out consumers on an older JDK for no gain.
+# Bytecode of the artifacts, not our JDK. 11 is Compose Desktop's own floor.
 jvmTarget = "11"
 kotlin = "2.4.10"
+
+# Metadata in the artifacts, not the compiler: consumers on older Kotlin cannot read our modules.
+kotlinLanguage = "2.2"
+# Our stdlib. At the compiler version Gradle resolves it upwards for consumers and breaks that same compatibility.
+kotlinCoreLibraries = "2.2.0"
+
 compose = "1.11.0"
 composeMaterial3 = "1.9.0"
 agp = "8.13.2"

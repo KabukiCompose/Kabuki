@@ -1,6 +1,6 @@
 package kabuki.sample.tests
 
-import kabuki.onScreen
+import kabuki.page.onScreen
 import kabuki.sample.runner.runTheaterTest
 import kabuki.sample.screens.PerformanceCardItem
 import kabuki.sample.screens.PerformanceScreen

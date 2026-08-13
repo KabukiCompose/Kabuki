@@ -1,5 +1,6 @@
-package kabuki
+package kabuki.listener
 
+import kabuki.TestProfile
 import kotlin.time.Duration
 
 /** The test being run, as the runner sees it. Reported to every [KabukiListener]. */
@@ -10,7 +11,7 @@ public data class TestInfo(
     val profile: TestProfile,
 )
 
-/** A single [KabukiTestScope.step], reported when it starts and when it finishes. */
+/** A single [kabuki.KabukiTestScope.step], reported when it starts and when it finishes. */
 public data class StepInfo(
     /** Hierarchical number: "1", "1.2", "1.2.1"... - depth is the nesting level. */
     val label: String,
@@ -18,7 +19,7 @@ public data class StepInfo(
     val description: String,
 )
 
-/** Outcome of a single [KabukiTestScope.step], reported to listeners. */
+/** Outcome of a single [kabuki.KabukiTestScope.step], reported to listeners. */
 public sealed interface StepResult {
     /** The step body completed without throwing. */
     public data object Passed : StepResult
@@ -72,7 +73,7 @@ public sealed interface TestResult {
 /**
  * SPI for test lifecycle events: reporting (Allure), logging, metrics.
  * Register via config: `config = { listeners += MyListener() }`.
- * [ConsoleListener] is installed by default; clear [KabukiConfig.listeners]
+ * [ConsoleListener] is installed by default; clear [kabuki.KabukiConfig.listeners]
  * to remove it.
  */
 public interface KabukiListener {
@@ -85,7 +86,7 @@ public interface KabukiListener {
     /**
      * A step is left, successfully or not. Fired whenever the step body ran - the
      * one case without it is a listener throwing on [onStepStart] under
-     * [KabukiConfig.strictListeners], where the step never starts.
+     * [kabuki.KabukiConfig.strictListeners], where the step never starts.
      */
     public fun onStepFinish(step: StepInfo, result: StepResult) {}
 
@@ -108,24 +109,20 @@ public interface KabukiListener {
 /**
  * Default console output.
  *
- * Output of ONE test is collected and printed as a single block when the test
- * finishes. This matters because Kabuki encourages running tests in parallel
- * inside one JVM: printed line by line, two tests interleave and nothing in a
- * line says which test it belongs to.
+ * Output of ONE test is buffered and printed as a block when the test finishes:
+ * Kabuki encourages running tests in parallel inside one JVM, and line by line two
+ * tests interleave with nothing saying which line belongs to which.
  *
- * There are two ways out of the buffer:
- * - [streaming] prints every line as it happens, prefixed with the test name.
- *   Use it when debugging a single test, or when a test might hang - a buffered
- *   run shows nothing at all until the end.
- * - a FAILED step flushes the buffer immediately, so the context of a failure is
- *   on screen the moment it happens rather than after the teardown.
+ * Two ways out of the buffer:
+ * - [streaming] prints each line as it happens, prefixed with the test name - for
+ *   debugging one test, or when a test might hang and a buffer would show nothing;
+ * - a FAILED step flushes immediately, so the context of a failure is on screen
+ *   before the teardown.
  *
- * [verbose] additionally reports every node operation.
- * [out] is the sink, replaceable so that the listener itself can be tested.
+ * [verbose] adds every node operation. [out] is the sink, replaceable so the
+ * listener itself can be tested.
  *
- * NOT thread-safe: it holds the buffer of one test. Every test gets its own
- * instance by default; sharing one between tests that run in parallel corrupts
- * the output.
+ * NOT thread-safe: it holds one test's buffer, so every test gets its own instance.
  */
 public class ConsoleListener(
     private val verbose: Boolean = false,

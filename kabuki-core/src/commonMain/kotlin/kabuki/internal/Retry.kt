@@ -1,9 +1,15 @@
-package kabuki
+package kabuki.internal
 
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.printToString
+import kabuki.KabukiAssertionError
+import kabuki.KabukiTestScope
+import kabuki.KabukiUsageError
+import kabuki.Tree
+import kabuki.listener.OperationInfo
+import kabuki.listener.OperationResult
 import kotlin.time.Duration
 import kotlin.time.TimeSource
 
@@ -19,6 +25,17 @@ internal fun KabukiTestScope.runOperation(
     onTimeout: (cause: Throwable?, timeoutUsed: Duration) -> Throwable,
     block: () -> Unit,
 ) {
+    // The last line of defence against the worst failure mode in this library: an
+    // operation on a scene that no longer exists does not fail, it HANGS - the
+    // virtual clock is stopped, so the retry loop waits for a frame that never comes.
+    if (isFinished) {
+        throw KabukiUsageError(
+            "This test has already finished, so '$operation' on $nodeDescription cannot run. " +
+                "A page object declared as an `object` outlives its test - enter it again " +
+                "in the test that uses it.",
+        )
+    }
+
     val info = OperationInfo(operation = operation, node = nodeDescription)
     config.notifyListeners { onOperationStart(info) }
 
@@ -47,9 +64,9 @@ internal fun KabukiTestScope.runOperation(
 /**
  * The retry primitive: runs [block] until it stops throwing or [timeout] expires.
  * Built on ComposeUiTest.waitUntil (v2 API), which advances the virtual clock
- * between attempts. [KabukiConfig.pollingInterval] adds a real-time pause; with
+ * between attempts. [kabuki.KabukiConfig.pollingInterval] adds a real-time pause; with
  * Duration.ZERO the loop retries on every rendered frame. On timeout a semantics
- * tree dump is appended (see [KabukiConfig.dumpSemanticsTreeOnFailure]).
+ * tree dump is appended (see [kabuki.KabukiConfig.dumpSemanticsTreeOnFailure]).
  *
  * Private: retrying without reporting should not be reachable - see [runOperation].
  */
@@ -74,6 +91,11 @@ private fun KabukiTestScope.retryUntilSuccess(
                 lastError = e
                 pause(pollingMillis)
                 false
+            } catch (e: KabukiUsageError) {
+                // Not something the UI will get right on the next attempt: the page
+                // object itself is wrong. Waiting out the timeout on it would hide
+                // the message that explains what to fix.
+                throw e
             } catch (e: IllegalStateException) {
                 lastError = e
                 pause(pollingMillis)
@@ -100,8 +122,12 @@ private fun KabukiTestScope.withTreeDump(error: Throwable): Throwable {
     if (!config.dumpSemanticsTreeOnFailure || error !is KabukiAssertionError) {
         return error
     }
+    // Dumped in the strategy's structural tree: under Smart that is the unmerged
+    // one, which shows where a tag or a text physically sits - the question a
+    // failing search actually raises.
+    val tree = config.treeStrategy.structuralSearch
     val dump = runCatching {
-        context.onRoot(useUnmergedTree = config.useUnmergedTree).printToString()
+        context.onRoot(useUnmergedTree = tree == Tree.Unmerged).printToString()
     }.getOrNull() ?: return error
 
     val lines = dump.lines()
@@ -122,7 +148,7 @@ private fun KabukiTestScope.withTreeDump(error: Throwable): Throwable {
         message = buildString {
             appendLine(error.message)
             appendLine()
-            appendLine("Semantics tree at the moment of failure:")
+            appendLine("Semantics tree (${tree.name.lowercase()}) at the moment of failure:")
             shown.forEach { appendLine(it) }
         },
         cause = error.cause,

@@ -1,7 +1,6 @@
 package kabuki.sample.tests
 
-import kabuki.onScreen
-import kabuki.scenario
+import kabuki.page.onScreen
 import kabuki.sample.model.Genre
 import kabuki.sample.runner.runTheaterTest
 import kabuki.sample.scenarios.BuyTicketScenario
@@ -10,6 +9,7 @@ import kabuki.sample.screens.PerformanceScreen
 import kabuki.sample.screens.PlaybillScreen
 import kabuki.sample.screens.TicketItem
 import kabuki.sample.screens.TicketsScreen
+import kabuki.scenario
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -72,7 +72,7 @@ class BuyTicketE2eTest {
     @Test
     fun genreFilterViaDropdown() = runTheaterTest(name = "Genre filter via dropdown") {
         step("Wait for the playbill to load") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 card("chushingura").assertIsDisplayed()
             }
         }
@@ -86,7 +86,7 @@ class BuyTicketE2eTest {
         }
 
         step("Reset the filter") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 filterByGenre(null)
                 // The grid keeps the item that was visible under the filter in
                 // view, so on a phone the first card is not composed at all.

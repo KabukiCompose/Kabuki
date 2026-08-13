@@ -1,16 +1,11 @@
-package kabuki
+package kabuki.page
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.hasTestTag
-import kabuki.semantics.TestTagParamsKey
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.TextStyle
-import kabuki.semantics.BackgroundColorKey
-import kabuki.semantics.TintColorKey
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -28,6 +23,8 @@ import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.doubleClick
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -37,21 +34,37 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
+import kabuki.CLICK_OPERATION
+import kabuki.InterceptedOperation
+import kabuki.KabukiAssertionError
+import kabuki.KabukiInterceptor
+import kabuki.KabukiTestScope
+import kabuki.SearchKind
+import kabuki.Tree
+import kabuki.internal.runOperation
+import kabuki.semantics.BackgroundColorKey
+import kabuki.semantics.TestTagParamsKey
+import kabuki.semantics.TintColorKey
+import kabuki.treeFor
 import kotlin.time.Duration
 
 /**
  * Semantics node wrapper: a matcher plus operations, each retried until the timeout.
  *
- * Retry is built on top of ComposeUiTest.waitUntil (v2 API) - it advances the
- * virtual clock between attempts, so it awaits both delayed composition
- * coroutines and updates coming from real background threads.
+ * Retry runs on ComposeUiTest.waitUntil (v2 API), which advances the virtual clock
+ * between attempts - so it awaits delayed composition coroutines and updates from
+ * real background threads alike.
  *
- * The test scope is resolved lazily through [scopeProvider]: this lets DSL layers
- * (screens, components) declare nodes as properties before the scope exists.
+ * The scope is resolved lazily through [scopeProvider], so screens and components
+ * can declare nodes as properties before any scope exists.
  *
- * [indexInCollection] switches the node to collection mode: the matcher is
- * resolved via onAllNodes and the node at that index is targeted (see
- * [UiNodeCollection.at]).
+ * [indexInCollection] switches to collection mode (see [UiNodeCollection.at]).
+ * [searchKind] tells [kabuki.TreeStrategy] which tree to resolve in, [forcedTree]
+ * overrides it for this node. [host] is the page object the node belongs to, asked
+ * for its container at operation time - so a component's root may be declared after
+ * the nodes it scopes.
  */
 @OptIn(ExperimentalTestApi::class)
 public class UiNode(
@@ -62,6 +75,9 @@ public class UiNode(
     private val indexInCollection: Int? = null,
     private val diagnosticTag: String? = null,
     private val diagnosticParams: List<String> = emptyList(),
+    private val searchKind: SearchKind = SearchKind.Structural,
+    private val forcedTree: Tree? = null,
+    private val host: NodeHost? = null,
 ) {
     private val scope: KabukiTestScope get() = scopeProvider()
 
@@ -71,12 +87,32 @@ public class UiNode(
     }
 
     /**
-     * A copy with its own timeout, overriding [KabukiConfig.defaultTimeout] -
+     * A copy with its own timeout, overriding [kabuki.KabukiConfig.defaultTimeout] -
      * for a fast negative check: `withTimeout(300.milliseconds).assertDoesNotExist()`.
      */
     public fun withTimeout(timeout: Duration): UiNode {
-        return UiNode(scopeProvider, matcher, description, timeout, indexInCollection, diagnosticTag, diagnosticParams)
+        return copy(timeout = timeout)
     }
+
+    /**
+     * This node resolved in the MERGED tree, whatever [kabuki.KabukiConfig.treeStrategy]
+     * says: `node(CARD).merged.assertTextContains("3500")` reads the text that
+     * accessibility - and therefore the user - actually gets.
+     */
+    public val merged: UiNode
+        get() {
+            return copy(forcedTree = Tree.Merged)
+        }
+
+    /**
+     * This node resolved in the UNMERGED tree: the physical node that was tagged.
+     * Needed to reach a tag nested inside a button, or to read a text field's own
+     * value without its label mixed in.
+     */
+    public val unmerged: UiNode
+        get() {
+            return copy(forcedTree = Tree.Unmerged)
+        }
 
     // ------------------------------- actions -------------------------------
 
@@ -415,8 +451,19 @@ public class UiNode(
         }
     }
 
+    /**
+     * The ladder: check the node itself, then - unless it is a text field - the
+     * MERGED view of the SAME node (its id is identical in both trees).
+     *
+     * Step two is what makes correct markup work: the tag sits on the button while
+     * the text lives in a Text inside it, so in the unmerged tree the button has no
+     * text of its own. [kabuki.TreeStrategy.contentFallback] switches the step off.
+     */
     private fun assertText(operation: String, expected: String, substring: Boolean) {
-        var actual: String? = null
+        var ownText: String? = null
+        var mergedText: String? = null
+        var mergedConsulted = false
+
         retryOperation(
             operation = operation,
             onTimeout = { cause, timeoutUsed ->
@@ -424,7 +471,18 @@ public class UiNode(
                     message = buildString {
                         appendLine("Node $description does not contain expected text within $timeoutUsed.")
                         appendLine("Expected ${if (substring) "substring" else "text"}: '$expected'")
-                        append("Actual text: ${actual?.let { "'$it'" } ?: "<node not found or has no text>"}")
+                        appendLine("Actual text: ${ownText?.let { "'$it'" } ?: "<node not found or has no text>"}")
+                        // Only when it adds something: a merged view that repeats the
+                        // node's own text is noise in an already long message.
+                        val repeatsOwnText = mergedText != null && mergedText == ownText
+                        if (mergedConsulted && !repeatsOwnText) {
+                            appendLine(
+                                "Merged view of the same node: " +
+                                    (mergedText?.let { "'$it'" } ?: "<no text there either>"),
+                            )
+                        }
+                        descendantWithTextHint(expected)?.let { hint -> appendLine(hint) }
+                        append(treeHint())
                         sameTagHint()?.let { hint -> append(hint) }
                     },
                     cause = cause,
@@ -432,19 +490,91 @@ public class UiNode(
             },
         ) {
             val node = interaction().fetchSemanticsNode()
-            val text = node.config.getOrNull(SemanticsProperties.Text)
-                ?.joinToString(" ") { it.text }
-                ?: node.config.getOrNull(SemanticsProperties.EditableText)?.text
-            actual = text
-            val matches = when {
-                text == null -> false
-                substring -> text.contains(expected)
-                else -> text == expected
+            ownText = node.textOrNull()
+            if (textMatches(ownText, expected, substring)) {
+                return@retryOperation
             }
-            if (!matches) {
-                throw AssertionError("Text mismatch: expected '$expected', actual '$text'")
+
+            mergedConsulted = mayConsultMergedView(node, ownText, substring)
+            if (mergedConsulted) {
+                mergedText = mergedViewOf(node.id)?.textOrNull()
+                if (textMatches(mergedText, expected, substring)) {
+                    return@retryOperation
+                }
             }
+            throw AssertionError("Text mismatch: expected '$expected', actual '${mergedText ?: ownText}'")
         }
+    }
+
+    private fun SemanticsNode.textOrNull(): String? {
+        return config.getOrNull(SemanticsProperties.Text)
+            ?.joinToString(" ") { it.text }
+            ?: config.getOrNull(SemanticsProperties.EditableText)?.text
+    }
+
+    private fun textMatches(text: String?, expected: String, substring: Boolean): Boolean {
+        return when {
+            text == null -> false
+            substring -> text.contains(expected)
+            else -> text == expected
+        }
+    }
+
+    /**
+     * Whether step two of the ladder applies.
+     *
+     * A substring check takes it even when the node HAS text: the merged view
+     * appends the children's texts, so "own" becomes "own child" and the expected
+     * substring can only appear there. An exact check gains nothing in that case -
+     * a longer string cannot be equal either - so it is skipped, which saves a
+     * fetch on every failing assertTextEquals.
+     */
+    private fun mayConsultMergedView(node: SemanticsNode, ownText: String?, substring: Boolean): Boolean {
+        if (tree() != Tree.Unmerged || !scope.config.treeStrategy.contentFallback) {
+            return false
+        }
+        // A text field's value belongs to the node itself, while its merged view
+        // mixes in the label - an assertion about the value would then pass on the
+        // label and report a field that was never filled in as correct.
+        if (node.config.getOrNull(SemanticsProperties.EditableText) != null) {
+            return false
+        }
+        return substring || ownText == null
+    }
+
+    /** The same node seen from the merged tree - node ids are shared between the two. */
+    private fun mergedViewOf(id: Int): SemanticsNode? {
+        return runCatching {
+            scope.context
+                .onAllNodes(
+                    matcher = SemanticsMatcher("node id $id") { candidate -> candidate.id == id },
+                    useUnmergedTree = false,
+                )
+                .fetchSemanticsNodes()
+                .firstOrNull()
+        }.getOrNull()
+    }
+
+    /**
+     * Names the node the text is physically on, when it is not the one checked.
+     * Turns "actual text: null" into the actual mistake: right screen, wrong node.
+     */
+    private fun descendantWithTextHint(expected: String): String? {
+        val root = runCatching { interaction().fetchSemanticsNode() }.getOrNull() ?: return null
+        val holder = findDescendantWithText(root, expected) ?: return null
+        val tag = holder.config.getOrNull(SemanticsProperties.TestTag)
+        val where = tag?.let { "tag '$it'" } ?: "id ${holder.id}"
+        return "The text is on a DESCENDANT of this node ($where), not on the node itself."
+    }
+
+    private fun findDescendantWithText(node: SemanticsNode, expected: String): SemanticsNode? {
+        for (child in node.children) {
+            if (child.textOrNull()?.contains(expected) == true) {
+                return child
+            }
+            findDescendantWithText(child, expected)?.let { found -> return found }
+        }
+        return null
     }
 
     /**
@@ -457,8 +587,11 @@ public class UiNode(
 
         val expected = diagnosticParams.takeIf { params -> params.isNotEmpty() } ?: return null
         val present = runCatching {
+            // Always the structural tree: this looks up nodes BY TAG, regardless of
+            // how the failing node itself was addressed.
+            val unmerged = scope.config.treeStrategy.structuralSearch == Tree.Unmerged
             scope.context
-                .onAllNodes(hasTestTag(tag), useUnmergedTree = scope.config.useUnmergedTree)
+                .onAllNodes(hasTestTag(tag), useUnmergedTree = unmerged)
                 .fetchSemanticsNodes()
                 .mapNotNull { node -> node.config.getOrNull(TestTagParamsKey) }
         }.getOrNull().orEmpty()
@@ -476,12 +609,59 @@ public class UiNode(
     }
 
     private fun interaction(): SemanticsNodeInteraction {
+        val unmerged = tree() == Tree.Unmerged
+        val effective = effectiveMatcher()
         return if (indexInCollection == null) {
-            scope.context.onNode(matcher, useUnmergedTree = scope.config.useUnmergedTree)
+            scope.context.onNode(effective, useUnmergedTree = unmerged)
         } else {
             scope.context
-                .onAllNodes(matcher, useUnmergedTree = scope.config.useUnmergedTree)[indexInCollection]
+                .onAllNodes(effective, useUnmergedTree = unmerged)[indexInCollection]
         }
+    }
+
+    /**
+     * The declared matcher plus the container of the page object it belongs to.
+     * Two identical components on one screen are told apart by exactly this.
+     */
+    internal fun effectiveMatcher(): SemanticsMatcher {
+        val container = host?.containerFor(this) ?: return matcher
+        return matcher.and(hasAnyAncestor(container))
+    }
+
+    private fun tree(): Tree {
+        return forcedTree ?: scope.config.treeStrategy.treeFor(searchKind)
+    }
+
+    /**
+     * Which tree the node was looked for in - belongs in every failure message,
+     * because "no such node" and "wrong tree" look identical otherwise.
+     */
+    private fun treeHint(): String {
+        val chosen = tree()
+        val reason = if (forcedTree != null) {
+            "forced on this node"
+        } else {
+            "${searchKind.name.lowercase()} search"
+        }
+        return "Tree: ${chosen.name.lowercase()} ($reason)"
+    }
+
+    private fun copy(
+        timeout: Duration? = this.timeout,
+        forcedTree: Tree? = this.forcedTree,
+    ): UiNode {
+        return UiNode(
+            scopeProvider = scopeProvider,
+            matcher = matcher,
+            description = description,
+            timeout = timeout,
+            indexInCollection = indexInCollection,
+            diagnosticTag = diagnosticTag,
+            diagnosticParams = diagnosticParams,
+            searchKind = searchKind,
+            forcedTree = forcedTree,
+            host = host,
+        )
     }
 
     private fun retryOperation(
@@ -489,6 +669,7 @@ public class UiNode(
         onTimeout: (cause: Throwable?, timeoutUsed: Duration) -> Throwable = { cause, timeoutUsed ->
             KabukiAssertionError(
                 message = "Operation '$operation' on node $description failed within $timeoutUsed." +
+                    "\n${treeHint()}" +
                     (cause?.let { "\nLast error: ${it.message}" } ?: "") +
                     (sameTagHint() ?: ""),
                 cause = cause,

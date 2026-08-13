@@ -23,13 +23,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kabuki.sample.data.TheaterRepository
 import kabuki.sample.model.Performance
 import kabuki.sample.model.Review
-import androidx.compose.ui.graphics.Color
 import kabuki.semantics.testListItem
 import kabuki.semantics.testListLength
 import kabuki.semantics.testTag

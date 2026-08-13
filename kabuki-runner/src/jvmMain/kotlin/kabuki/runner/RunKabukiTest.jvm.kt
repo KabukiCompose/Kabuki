@@ -3,7 +3,6 @@ package kabuki.runner
 import kabuki.KabukiConfig
 import kabuki.KabukiTestScope
 import kabuki.TestProfile
-import kabuki.defaultTestProfile
 
 /**
  * Desktop: delegates to [runDesktopTest] with [WindowMode.Auto] - headless by

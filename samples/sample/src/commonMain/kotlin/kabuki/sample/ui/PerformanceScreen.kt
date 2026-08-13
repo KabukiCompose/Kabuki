@@ -26,11 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import kabuki.semantics.testBackgroundColor
-import kabuki.semantics.testTag
 import androidx.compose.ui.unit.dp
 import kabuki.sample.TheaterState
 import kabuki.sample.model.Performance
+import kabuki.semantics.testBackgroundColor
+import kabuki.semantics.testTag
 
 enum class PerformanceTags {
     SCREEN,

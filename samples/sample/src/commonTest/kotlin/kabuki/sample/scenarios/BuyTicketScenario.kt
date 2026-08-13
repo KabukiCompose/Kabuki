@@ -1,7 +1,7 @@
 package kabuki.sample.scenarios
 
 import kabuki.Scenario
-import kabuki.onScreen
+import kabuki.page.onScreen
 import kabuki.sample.screens.PerformanceScreen
 import kabuki.sample.screens.PlaybillScreen
 import kabuki.sample.screens.PurchaseConfirmDialog

@@ -6,11 +6,11 @@ import androidx.compose.ui.test.v2.runSkikoComposeUiTest
 import androidx.compose.ui.unit.Density
 import kabuki.KabukiConfig
 import kabuki.KabukiTestScope
+import kabuki.TestProfile
 import kabuki.asKabukiContext
 import kabuki.defaultTestProfile
-import kabuki.TestInfo
-import kabuki.TestProfile
-import kabuki.TestResult
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
 
 /**
  * Desktop runner entry point: a headless scene (v2 skiko runner) sized and
@@ -56,14 +56,25 @@ public fun runDesktopTest(
         )
         val info = TestInfo(name = name, profile = profile)
         scope.notifyTestStart(info)
+        // The outcome is reported from ONE place. Reporting it in both the happy and
+        // the failing path meant two finish events whenever the first one threw.
+        var result: TestResult = TestResult.Passed
         try {
             scope.block()
-            scope.notifyTestFinish(info, TestResult.Passed)
         } catch (e: Throwable) {
-            scope.notifyTestFinish(info, TestResult.Failed(e))
+            result = TestResult.Failed(e)
             throw e
         } finally {
-            visibleWindow?.close()
+            // The window closes even if reporting throws - with strictListeners a
+            // broken listener does exactly that, and a leaked window would sit on
+            // screen for the rest of the run.
+            try {
+                // Before closing: a listener may still want to look at the scene
+                // (a screenshot on failure, for instance).
+                scope.notifyTestFinish(info, result)
+            } finally {
+                visibleWindow?.close()
+            }
         }
     }
 }

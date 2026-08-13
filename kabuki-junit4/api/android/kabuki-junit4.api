@@ -2,10 +2,18 @@ public abstract interface class kabuki/junit4/KabukiInterop {
 	public abstract fun getKabukiScope ()Lkabuki/KabukiTestScope;
 }
 
+public final class kabuki/junit4/KabukiRule : kabuki/junit4/KabukiInterop, org/junit/rules/TestRule {
+	public static final field $stable I
+	public fun <init> (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun apply (Lorg/junit/runners/model/Statement;Lorg/junit/runner/Description;)Lorg/junit/runners/model/Statement;
+	public fun getKabukiScope ()Lkabuki/KabukiTestScope;
+}
+
 public final class kabuki/junit4/RuleInteropKt {
 	public static final fun asKabukiContext (Landroidx/compose/ui/test/junit4/ComposeTestRule;)Lkabuki/KabukiComposeContext;
-	public static final fun kabuki (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun kabuki$default (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static final fun kabuki (Landroidx/compose/ui/test/junit4/ComposeTestRule;Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun kabuki$default (Landroidx/compose/ui/test/junit4/ComposeTestRule;Ljava/lang/String;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public static final fun kabukiScope (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;)Lkabuki/KabukiTestScope;
 	public static synthetic fun kabukiScope$default (Landroidx/compose/ui/test/junit4/ComposeTestRule;Lkabuki/TestProfile;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/KabukiTestScope;
 }

@@ -8,8 +8,10 @@ import kabuki.KabukiComposeContext
 import kabuki.KabukiConfig
 import kabuki.KabukiTestScope
 import kabuki.TestProfile
-import kabuki.Screen
-import kabuki.onScreen
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
+import kabuki.page.Screen
+import kabuki.page.onScreen
 
 /**
  * Incremental adoption: Kabuki on top of an EXISTING ComposeTestRule - your
@@ -54,6 +56,11 @@ public fun ComposeTestRule.asKabukiContext(): KabukiComposeContext {
  *     override val kabukiScope by lazy { composeRule.kabukiScope() }
  * }
  * ```
+ *
+ * A bare scope has no idea when the test ends, so listeners get steps and
+ * operations but no test events, and page objects stay bound until the next
+ * scope on this thread replaces them. For a base test class prefer [KabukiRule],
+ * which JUnit tells where the test starts and ends; for a single block, [kabuki].
  */
 public fun ComposeTestRule.kabukiScope(
     profile: TestProfile = defaultInteropProfile(),
@@ -70,17 +77,34 @@ public fun ComposeTestRule.kabukiScope(
  * Block form for a series of Kabuki calls with steps and scenarios:
  *
  * ```kotlin
- * composeRule.kabuki {
+ * composeRule.kabuki(name = "Payment with a saved card") {
  *     step("New compose part") { onScreen<PaymentScreen> { payButton.click() } }
  * }
  * ```
+ *
+ * Reports the test to listeners (a reporter sees a test, not loose steps) and
+ * releases the page objects at the end. For a whole test class [KabukiRule] does
+ * the same through JUnit; a bare [kabukiScope] never learns when the test is over.
  */
 public fun ComposeTestRule.kabuki(
+    name: String = "kabuki interop",
     profile: TestProfile = defaultInteropProfile(),
     config: KabukiConfig.() -> Unit = {},
     block: KabukiTestScope.() -> Unit,
 ) {
-    kabukiScope(profile, config).block()
+    val scope = kabukiScope(profile, config)
+    val info = TestInfo(name = name, profile = scope.profile)
+    scope.notifyTestStart(info)
+    var result: TestResult = TestResult.Passed
+    try {
+        scope.block()
+    } catch (e: Throwable) {
+        result = TestResult.Failed(e)
+        throw e
+    } finally {
+        // One place, so a reporter sees one finished test.
+        scope.notifyTestFinish(info, result)
+    }
 }
 
 /**

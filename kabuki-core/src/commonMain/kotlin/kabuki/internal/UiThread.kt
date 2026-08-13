@@ -1,4 +1,4 @@
-package kabuki
+package kabuki.internal
 
 /**
  * Executes the block on the platform UI thread (Swing EDT on desktop) and returns the result.

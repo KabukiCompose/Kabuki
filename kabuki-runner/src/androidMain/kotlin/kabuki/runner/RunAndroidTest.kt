@@ -4,11 +4,11 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kabuki.KabukiConfig
 import kabuki.KabukiTestScope
-import kabuki.asKabukiContext
-import kabuki.TestInfo
 import kabuki.TestProfile
-import kabuki.TestResult
+import kabuki.asKabukiContext
 import kabuki.defaultTestProfile
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
 
 /**
  * Android runner entry point (instrumented tests): the same KabukiTestScope,
@@ -31,12 +31,16 @@ public fun runAndroidTest(
         )
         val info = TestInfo(name = name, profile = profile)
         scope.notifyTestStart(info)
+        // The outcome is reported from ONE place. Reporting it in both the happy and
+        // the failing path meant two finish events whenever the first one threw.
+        var result: TestResult = TestResult.Passed
         try {
             scope.block()
-            scope.notifyTestFinish(info, TestResult.Passed)
         } catch (e: Throwable) {
-            scope.notifyTestFinish(info, TestResult.Failed(e))
+            result = TestResult.Failed(e)
             throw e
+        } finally {
+            scope.notifyTestFinish(info, result)
         }
     }
 }

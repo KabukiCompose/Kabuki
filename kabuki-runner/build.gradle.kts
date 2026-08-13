@@ -49,3 +49,24 @@ android {
         minSdk = libs.versions.androidMinSdk.get().toInt()
     }
 }
+
+// DocumentationConsistencyTest reads the docs and the migration skill. Gradle
+// cannot see that on its own, so after editing a document it would call the test
+// task up-to-date and never run the check - a guard that never fires.
+tasks.withType<Test>().configureEach {
+    inputs.files(rootProject.fileTree("docs") { include("**/*.md") })
+        .withPropertyName("documentation")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.file("settings.gradle.kts"))
+        .withPropertyName("settings")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+    // Neither the docs nor the skill are committed yet, so both may legitimately
+    // be missing - the test skips itself then, see DocumentationConsistencyTest.
+    val migrationSkill = rootProject.file(".claude/skills/migrate-to-kabuki/SKILL.md")
+    if (migrationSkill.isFile) {
+        inputs.file(migrationSkill)
+            .withPropertyName("migrationSkill")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+}

@@ -1,6 +1,6 @@
 package kabuki.sample.screens
 
-import kabuki.Screen
+import kabuki.page.Screen
 import kabuki.sample.ui.NavTags
 import kabuki.sample.ui.PerformanceTags
 
