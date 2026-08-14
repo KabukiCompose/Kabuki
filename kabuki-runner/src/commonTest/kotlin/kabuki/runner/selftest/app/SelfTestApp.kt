@@ -1,10 +1,11 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.app
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -36,7 +37,6 @@ import kabuki.semantics.testListItem
 import kabuki.semantics.testListLength
 import kabuki.semantics.testTag
 import kabuki.semantics.testTintColor
-import kotlin.concurrent.thread
 import kotlinx.coroutines.delay
 
 /**
@@ -125,78 +125,100 @@ class SelfTestAppState {
     /** Simulates loading on a real background thread - retry has to wait in real time. */
     fun startLoading() {
         status = "Loading..."
-        thread(isDaemon = true) {
-            Thread.sleep(500)
+        runInBackground(delayMillis = 500) {
             status = "Done"
         }
     }
 }
 
+/**
+ * Which part of the self-test screen a test needs.
+ *
+ * The whole screen is taller than a phone in landscape, so anything below the fold
+ * exists in the tree but is never displayed - and a test asserting visibility then
+ * passes on a desktop scene and fails on a device. A test that cares about the
+ * scrollable parts asks for [Scrolling] and gets a screen that fits anywhere.
+ */
+enum class SelfTestSection {
+    /** Everything. Fine for elements near the top of the screen. */
+    All,
+
+    /** Only the scrollable column and the lazy list. */
+    Scrolling,
+}
+
 @Composable
-fun SelfTestApp(state: SelfTestAppState) {
+fun SelfTestApp(state: SelfTestAppState, section: SelfTestSection = SelfTestSection.All) {
     // A block appearing after a delay on the test's virtual clock - retry has to advance time
     LaunchedEffect(Unit) {
         delay(1_500)
         state.delayedBlockVisible = true
     }
 
+    val showAll = section == SelfTestSection.All
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(16.dp).testTag(SelfTestTags.SCREEN),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = "Kabuki SelfTest",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.testTag(SelfTestTags.TITLE),
-                )
-
-                Button(
-                    onClick = { state.counter++ },
-                    modifier = Modifier.testTag(SelfTestTags.COUNTER_BUTTON),
-                ) {
-                    Text("Counter +1")
+                if (showAll) {
+                    MainControls(state)
                 }
-                Text(
-                    text = "Counter: ${state.counter}",
-                    modifier = Modifier.testTag(SelfTestTags.COUNTER_VALUE),
-                )
-
-                Button(
-                    onClick = { state.startLoading() },
-                    modifier = Modifier.testTag(SelfTestTags.LOAD_BUTTON),
-                ) {
-                    Text("Load")
-                }
-                Text(
-                    text = state.status,
-                    modifier = Modifier.testTag(SelfTestTags.STATUS),
-                )
-
-                if (state.delayedBlockVisible) {
-                    Text(
-                        text = "Delayed block appeared",
-                        modifier = Modifier.testTag(SelfTestTags.DELAYED_BLOCK),
-                    )
-                }
-
-                TextField(
-                    value = state.input,
-                    onValueChange = { state.input = it },
-                    modifier = Modifier.testTag(SelfTestTags.INPUT),
-                )
-
-                StatesAndGestures(state)
-
                 ScrollableArea()
-
-                TreeProbe(state)
-
-                ScopingProbe()
+                if (showAll) {
+                    TreeProbe(state)
+                    ScopingProbe()
+                }
             }
         }
     }
+}
+
+@Composable
+private fun ColumnScope.MainControls(state: SelfTestAppState) {
+    Text(
+        text = "Kabuki SelfTest",
+        style = MaterialTheme.typography.headlineMedium,
+        modifier = Modifier.testTag(SelfTestTags.TITLE),
+    )
+
+    Button(
+        onClick = { state.counter++ },
+        modifier = Modifier.testTag(SelfTestTags.COUNTER_BUTTON),
+    ) {
+        Text("Counter +1")
+    }
+    Text(
+        text = "Counter: ${state.counter}",
+        modifier = Modifier.testTag(SelfTestTags.COUNTER_VALUE),
+    )
+
+    Button(
+        onClick = { state.startLoading() },
+        modifier = Modifier.testTag(SelfTestTags.LOAD_BUTTON),
+    ) {
+        Text("Load")
+    }
+    Text(
+        text = state.status,
+        modifier = Modifier.testTag(SelfTestTags.STATUS),
+    )
+
+    if (state.delayedBlockVisible) {
+        Text(
+            text = "Delayed block appeared",
+            modifier = Modifier.testTag(SelfTestTags.DELAYED_BLOCK),
+        )
+    }
+
+    TextField(
+        value = state.input,
+        onValueChange = { state.input = it },
+        modifier = Modifier.testTag(SelfTestTags.INPUT),
+    )
+
+    StatesAndGestures(state)
 }
 
 /** Node states and gestures: enabled, checked, selected, described, tinted, double/long click. */

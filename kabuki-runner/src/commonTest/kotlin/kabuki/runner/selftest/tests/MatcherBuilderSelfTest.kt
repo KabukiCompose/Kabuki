@@ -1,8 +1,11 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasText
 import kabuki.KabukiAssertionError
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
+import kabuki.runner.selftest.app.SelfTestTint
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue

@@ -1,10 +1,14 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.KabukiAssertionError
 import kabuki.page.ListItem
 import kabuki.page.ListItemScope
 import kabuki.page.Screen
 import kabuki.page.onScreen
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.LAZY_ITEM_COUNT
+import kabuki.runner.selftest.app.SelfTestSection
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -23,6 +27,7 @@ class LazyListSelfTest : SelfTestCase() {
     @Test
     fun lengthComesFromThePublishedValueNotFromVisibleItems() = runTest(
         name = "assertLengthEquals",
+        section = SelfTestSection.Scrolling,
         // Keeps the negative case below from waiting out the default 5 seconds.
         config = { defaultTimeout = 1.seconds },
     ) {
@@ -51,6 +56,9 @@ class LazyListSelfTest : SelfTestCase() {
     @Test
     fun itemsAreAddressedByIndexAcrossTheWholeList() = runTest(
         name = "itemAt / itemNodeAt",
+        // The list has to be ON SCREEN for an item to count as displayed: with the
+        // whole app composed it sits below the fold on a phone in landscape.
+        section = SelfTestSection.Scrolling,
         config = { defaultTimeout = 1.seconds },
     ) {
         step("An item far down the list is reached by index") {

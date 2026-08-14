@@ -1,4 +1,4 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.KabukiAssertionError
 import kabuki.listener.KabukiListener
@@ -8,6 +8,8 @@ import kabuki.listener.StepInfo
 import kabuki.listener.StepResult
 import kabuki.listener.TestInfo
 import kabuki.listener.TestResult
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue

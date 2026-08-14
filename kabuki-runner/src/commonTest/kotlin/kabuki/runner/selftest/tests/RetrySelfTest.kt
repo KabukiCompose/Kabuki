@@ -1,7 +1,9 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.ClickViaSemanticsAction
 import kabuki.KabukiAssertionError
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

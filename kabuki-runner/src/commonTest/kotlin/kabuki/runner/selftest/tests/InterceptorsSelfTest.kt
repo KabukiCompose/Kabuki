@@ -1,8 +1,9 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
-import kabuki.ClickOnUiThread
 import kabuki.ClickViaSemanticsAction
 import kabuki.KabukiInterceptor
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -11,7 +12,9 @@ import kotlin.test.assertEquals
  *
  * They exist so the public API can stay free of variants. Instead of `click`
  * carrying a strategy parameter, a project that hits a platform quirk installs
- * an interceptor once - see [ClickOnUiThread], [ClickViaSemanticsAction].
+ * an interceptor once - see [ClickViaSemanticsAction].
+ *
+ * The desktop-only `ClickOnUiThread` is covered by DesktopInterceptorsSelfTest.
  */
 class InterceptorsSelfTest : SelfTestCase() {
 
@@ -21,18 +24,6 @@ class InterceptorsSelfTest : SelfTestCase() {
         config = { interceptors += ClickViaSemanticsAction() },
     ) { app ->
         step("A click goes through the semantics action, not a pointer event") {
-            node(SelfTestTags.COUNTER_BUTTON).click()
-            node(SelfTestTags.COUNTER_VALUE).assertTextContains("Counter: 1")
-            assertEquals(1, app.counter)
-        }
-    }
-
-    @Test
-    fun clickOnUiThreadInterceptorWorks() = runTest(
-        name = "Click on the UI thread",
-        config = { interceptors += ClickOnUiThread() },
-    ) { app ->
-        step("A click is dispatched on the UI thread") {
             node(SelfTestTags.COUNTER_BUTTON).click()
             node(SelfTestTags.COUNTER_VALUE).assertTextContains("Counter: 1")
             assertEquals(1, app.counter)

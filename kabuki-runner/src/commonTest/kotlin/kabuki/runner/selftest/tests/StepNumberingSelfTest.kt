@@ -1,8 +1,9 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.listener.KabukiListener
 import kabuki.listener.StepInfo
 import kabuki.listener.StepResult
+import kabuki.runner.selftest.SelfTestCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

@@ -1,10 +1,12 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import java.awt.Window
 import kabuki.listener.KabukiListener
 import kabuki.listener.TestInfo
 import kabuki.listener.TestResult
 import kabuki.runner.WindowMode
+import kabuki.runner.selftest.DesktopSelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -17,7 +19,7 @@ import kotlin.test.assertFailsWith
  * - the window closes in teardown without hanging the JVM,
  * - the environment created by the base class is shared between the two compositions.
  */
-class VisibleWindowSelfTest : SelfTestCase() {
+class VisibleWindowSelfTest : DesktopSelfTestCase() {
 
 
 

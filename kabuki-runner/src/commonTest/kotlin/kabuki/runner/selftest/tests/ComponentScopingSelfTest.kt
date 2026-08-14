@@ -1,9 +1,11 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.KabukiAssertionError
 import kabuki.page.Component
 import kabuki.page.Screen
 import kabuki.page.onScreen
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.milliseconds

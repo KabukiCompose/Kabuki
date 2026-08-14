@@ -68,22 +68,6 @@ public class InterceptedOperation internal constructor(
 internal const val CLICK_OPERATION: String = "click"
 
 /**
- * Performs clicks on the platform UI thread.
- *
- * Works around a desktop issue where a click sent from the test thread is lost
- * while the window is still regaining focus.
- */
-public class ClickOnUiThread : KabukiInterceptor {
-    override fun intercept(operation: InterceptedOperation) {
-        if (operation.name != CLICK_OPERATION) {
-            operation.proceed()
-            return
-        }
-        operation.onUiThread { operation.node.performClick() }
-    }
-}
-
-/**
  * Invokes the OnClick semantics action instead of injecting a pointer event.
  *
  * Reliable right after a dialog opens or closes, when hit testing may still
@@ -96,6 +80,9 @@ public class ClickViaSemanticsAction : KabukiInterceptor {
             operation.proceed()
             return
         }
-        operation.onUiThread { operation.node.performSemanticsAction(SemanticsActions.OnClick) }
+        // Called straight from the test thread. Wrapping it in onUiThread works on
+        // desktop but is forbidden on Android, where the test framework refuses
+        // every action taken from the main thread - measured on API 25.
+        operation.node.performSemanticsAction(SemanticsActions.OnClick)
     }
 }

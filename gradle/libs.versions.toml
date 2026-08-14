@@ -17,7 +17,9 @@ androidTargetSdk = "37"
 activityCompose = "1.12.4"
 coroutines = "1.10.2"
 binaryCompatibilityValidator = "0.16.3"
-androidxTestRunner = "1.6.2"
+androidxTestRunner = "1.7.0"
+# Pinned: the transitive Espresso is 3.5.0, which breaks on Android 16.
+androidxEspresso = "3.7.0"
 androidxComposeUi = "1.11.1"
 
 [libraries]
@@ -30,6 +32,7 @@ compose-uiTest = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "c
 compose-uiTestJunit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "compose" }
 androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-testRunner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-espressoCore = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxEspresso" }
 androidx-composeUiTestManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidxComposeUi" }
 kotlinx-coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 

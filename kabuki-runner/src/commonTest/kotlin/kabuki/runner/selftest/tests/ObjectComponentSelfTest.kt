@@ -1,8 +1,11 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.page.Component
 import kabuki.page.Screen
 import kabuki.page.onScreen
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
+import kabuki.runner.selftest.app.TREE_LABEL_TEXT
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue

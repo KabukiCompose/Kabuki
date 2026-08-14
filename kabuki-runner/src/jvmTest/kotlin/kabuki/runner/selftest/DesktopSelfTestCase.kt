@@ -4,13 +4,15 @@ import kabuki.KabukiConfig
 import kabuki.KabukiTestScope
 import kabuki.runner.WindowMode
 import kabuki.runner.runDesktopTest
+import kabuki.runner.selftest.app.SelfTestApp
+import kabuki.runner.selftest.app.SelfTestAppState
 
 /**
- * Base class for SelfTestApp tests - also an example of a desktop-specific test
- * case built directly on top of [runDesktopTest] (the generic KabukiTestCase is
- * platform-agnostic and therefore knows nothing about window modes).
+ * The same self-test app as [SelfTestCase], but launched through [runDesktopTest]
+ * so a test can choose the window mode. Only for what a device has no equivalent
+ * of - everything else belongs in the shared base class.
  */
-abstract class SelfTestCase {
+abstract class DesktopSelfTestCase {
 
     protected fun runTest(
         name: String,

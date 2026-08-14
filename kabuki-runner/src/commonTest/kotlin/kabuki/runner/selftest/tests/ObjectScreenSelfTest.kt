@@ -1,12 +1,14 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.KabukiTestScope
 import kabuki.KabukiUsageError
-import kabuki.listener.TestResult
-import kabuki.listener.TestInfo
 import kabuki.listener.KabukiListener
+import kabuki.listener.TestInfo
+import kabuki.listener.TestResult
 import kabuki.page.Screen
 import kabuki.page.onScreen
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

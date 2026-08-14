@@ -1,4 +1,4 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.Profiles
 import kabuki.listener.ConsoleListener

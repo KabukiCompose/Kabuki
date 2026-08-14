@@ -9,6 +9,11 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+// R8 check: the shared tests against a MINIFIED release build. A flag, so the
+// everyday run stays on debug - see docs/r8_minification.md.
+//   ./gradlew :samples:sample:connectedAndroidTest -Pkabuki.minifiedTests
+val minifiedTests = providers.gradleProperty("kabuki.minifiedTests").isPresent
+
 kotlin {
 
     androidTarget {
@@ -55,6 +60,9 @@ kotlin {
 
         androidInstrumentedTest.dependencies {
             implementation(libs.androidx.testRunner)
+            // Transitive Espresso is 3.5.0 and breaks on Android 16. Every project
+            // on a modern device needs this line, so the sample carries it too.
+            implementation(libs.androidx.espressoCore)
         }
     }
 }
@@ -70,6 +78,24 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = minifiedTests
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            // The test apk is minified too and takes its own rules - the app's
+            // proguardFiles do not apply to it.
+            testProguardFiles("proguard-test-rules.pro")
+            // The debug key: the point is to run R8 output on a device, not to ship it.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    // Which variant the instrumented tests are built against.
+    testBuildType = if (minifiedTests) "release" else "debug"
 }
 
 androidComponents {
@@ -83,6 +109,11 @@ androidComponents {
 dependencies {
     // Provides the empty ComponentActivity that runComposeUiTest launches on Android
     debugImplementation(libs.androidx.composeUiTestManifest)
+    if (minifiedTests) {
+        // The same activity for the minified run - without it there is nothing to
+        // launch and every test reports "No compose hierarchies found".
+        releaseImplementation(libs.androidx.composeUiTestManifest)
+    }
 }
 
 compose.desktop {

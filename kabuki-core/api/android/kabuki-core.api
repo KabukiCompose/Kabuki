@@ -5,12 +5,6 @@ public final class kabuki/BranchingKt {
 	public static synthetic fun os$default (Lkabuki/KabukiTestScope;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 }
 
-public final class kabuki/ClickOnUiThread : kabuki/KabukiInterceptor {
-	public static final field $stable I
-	public fun <init> ()V
-	public fun intercept (Lkabuki/InterceptedOperation;)V
-}
-
 public final class kabuki/ClickViaSemanticsAction : kabuki/KabukiInterceptor {
 	public static final field $stable I
 	public fun <init> ()V

@@ -1,7 +1,11 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.KabukiAssertionError
 import kabuki.TreeStrategy
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.LABELED_INPUT_LABEL
+import kabuki.runner.selftest.app.SelfTestTags
+import kabuki.runner.selftest.app.TREE_LABEL_TEXT
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue

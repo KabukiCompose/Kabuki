@@ -1,8 +1,11 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import androidx.compose.runtime.Composable
 import kabuki.KabukiConfig
 import kabuki.runner.KabukiTestCase
+import kabuki.runner.selftest.app.SelfTestApp
+import kabuki.runner.selftest.app.SelfTestAppState
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

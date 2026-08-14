@@ -1,3 +1,7 @@
+import com.android.build.api.variant.HostTestBuilder
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
@@ -13,6 +17,11 @@ kotlin {
 
     androidTarget {
         publishLibraryVariants("release")
+
+        // Puts instrumented tests in the "test" tree, so the commonTest self-tests
+        // reach a device too. By default they sit in a tree of their own.
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
     }
 
     jvm()
@@ -20,6 +29,14 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.kabukiCore)
+        }
+
+        // Self-tests: written once, run on both platforms. The test app they drive
+        // needs the UI toolkit; the DSL comes from the module itself.
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.compose.material3)
+            implementation(libs.compose.foundation)
         }
 
         jvmMain.dependencies {
@@ -32,12 +49,14 @@ kotlin {
         }
 
         jvmTest.dependencies {
-            // Self-tests: library features exercised on a minimal in-module app
-            // (virtual clock, background threads, error messages, visible window).
             // The native skiko belongs here - self-tests do render for real.
-            implementation(kotlin("test"))
             implementation(compose.desktop.currentOs)
-            implementation(libs.compose.material3)
+        }
+
+        androidInstrumentedTest.dependencies {
+            implementation(libs.androidx.testRunner)
+            // Pulls Espresso up from the transitive 3.5.0 - see the catalog comment.
+            implementation(libs.androidx.espressoCore)
         }
     }
 }
@@ -47,12 +66,29 @@ android {
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.androidMinSdk.get().toInt()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // A library has no targetSdk, but its instrumented APK does - and it defaults to
+    // minSdk, which stops Android 16 from ever launching the test Activity.
+    testOptions {
+        targetSdk = libs.versions.androidTargetSdk.get().toInt()
     }
 }
 
-// DocumentationConsistencyTest reads the docs and the migration skill. Gradle
-// cannot see that on its own, so after editing a document it would call the test
-// task up-to-date and never run the check - a guard that never fires.
+androidComponents {
+    // No local unit tests here - the shared self-tests run via jvmTest and
+    // androidInstrumentedTest. Leaving it on gives the IDE a dead run entry.
+    beforeVariants { it.hostTests[HostTestBuilder.UNIT_TEST_TYPE]?.enable = false }
+}
+
+dependencies {
+    // The empty ComponentActivity that runComposeUiTest launches on Android
+    debugImplementation(libs.androidx.composeUiTestManifest)
+}
+
+// DocumentationConsistencyTest reads these files. Undeclared, they would leave the
+// task up-to-date after every doc edit - a guard that never fires.
 tasks.withType<Test>().configureEach {
     inputs.files(rootProject.fileTree("docs") { include("**/*.md") })
         .withPropertyName("documentation")
@@ -61,8 +97,7 @@ tasks.withType<Test>().configureEach {
         .withPropertyName("settings")
         .withPathSensitivity(PathSensitivity.RELATIVE)
 
-    // Neither the docs nor the skill are committed yet, so both may legitimately
-    // be missing - the test skips itself then, see DocumentationConsistencyTest.
+    // Not committed yet, so it may be missing - the test skips itself then.
     val migrationSkill = rootProject.file(".claude/skills/migrate-to-kabuki/SKILL.md")
     if (migrationSkill.isFile) {
         inputs.file(migrationSkill)

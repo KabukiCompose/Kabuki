@@ -106,8 +106,8 @@ tests have to be written twice. Kabuki exists so the same test covers both.
 - **Environment profiles** - scene size, density, window size class,
   `os()` branches and `assumeOs` / `assumeSizeClass`.
 - **Operation interceptors** - replace *how* an operation is performed
-  (see `ClickOnUiThread`, `ClickViaSemanticsAction`) instead of every test
-  carrying a workaround.
+  (see `ClickViaSemanticsAction`, and `ClickOnUiThread` on desktop) instead of
+  every test carrying a workaround.
 - **Incremental adoption** - `kabuki-junit4` works on top of an existing
   `ComposeTestRule`, so new tests can live next to the old ones.
 

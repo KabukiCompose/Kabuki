@@ -1,8 +1,13 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertTextEquals
 import kabuki.KabukiAssertionError
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.LEGACY_STRING_TAG
+import kabuki.runner.selftest.app.SelfTestSection
+import kabuki.runner.selftest.app.SelfTestTags
+import kabuki.runner.selftest.app.SelfTestTint
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -208,7 +213,13 @@ class UiNodeOperationsSelfTest : SelfTestCase() {
     }
 
     @Test
-    fun scrollToBringsAnOffScreenNodeIntoView() = runTest(name = "scrollTo / not displayed") {
+    fun scrollToBringsAnOffScreenNodeIntoView() = runTest(
+        name = "scrollTo / not displayed",
+        // Only the scrollable parts: on a short screen the whole app does not fit,
+        // and a scrollable container living below the fold cannot be scrolled into
+        // view at all.
+        section = SelfTestSection.Scrolling,
+    ) {
         step("The far block exists but is not displayed") {
             node(SelfTestTags.FAR_BLOCK).assertExists()
             node(SelfTestTags.FAR_BLOCK).assertIsNotDisplayed()
@@ -221,7 +232,10 @@ class UiNodeOperationsSelfTest : SelfTestCase() {
     }
 
     @Test
-    fun scrollToIndexReachesAnItemFarDownTheLazyList() = runTest(name = "scrollToIndex") {
+    fun scrollToIndexReachesAnItemFarDownTheLazyList() = runTest(
+        name = "scrollToIndex",
+        section = SelfTestSection.Scrolling,
+    ) {
         step("An item near the end is not composed yet") {
             node(SelfTestTags.LAZY_LIST).assertIsDisplayed()
             nodeWithText(FAR_LAZY_ITEM, substring = false).assertDoesNotExist()

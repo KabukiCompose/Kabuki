@@ -1,4 +1,4 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.BasicText

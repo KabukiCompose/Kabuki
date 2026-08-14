@@ -1,9 +1,11 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.KabukiAssertionError
 import kabuki.listener.KabukiListener
 import kabuki.listener.OperationInfo
 import kabuki.listener.OperationResult
+import kabuki.runner.selftest.SelfTestCase
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

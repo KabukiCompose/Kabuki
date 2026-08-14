@@ -1,4 +1,4 @@
-package kabuki.runner.selftest
+package kabuki.runner.selftest.tests
 
 import kabuki.Orientation
 import kabuki.Os
@@ -15,6 +15,9 @@ import kabuki.listener.TestResult
 import kabuki.os
 import kabuki.runner.WindowMode
 import kabuki.runner.runDesktopTest
+import kabuki.runner.selftest.app.SelfTestApp
+import kabuki.runner.selftest.app.SelfTestAppState
+import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
