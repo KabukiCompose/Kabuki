@@ -41,6 +41,7 @@ import kabuki.InterceptedOperation
 import kabuki.KabukiAssertionError
 import kabuki.KabukiInterceptor
 import kabuki.KabukiTestScope
+import kabuki.KabukiUsageError
 import kabuki.SearchKind
 import kabuki.Tree
 import kabuki.internal.runOperation
@@ -402,12 +403,53 @@ public class UiNode(
         return checkNotNull(style)
     }
 
-    // ------------------------------- escape hatch -------------------------------
+    // ---------------------------- extension points ----------------------------
+
+    /** A custom action, retried and reported under [name] like a built-in one. */
+    public fun action(name: String, block: (SemanticsNodeInteraction) -> Unit) {
+        retryOperation(name) {
+            block(interaction())
+        }
+        scope.context.waitForIdle()
+    }
 
     /**
-     * Direct access to the raw SemanticsNodeInteraction - no retry, no wrapping.
-     * For everything the typed API does not cover yet.
+     * A custom read, retried and reported under [name]. Null is a result, not a
+     * reason to retry - only a thrown exception fails the attempt.
      */
+    public fun <T> read(name: String, block: (SemanticsNodeInteraction) -> T): T {
+        var result: T? = null
+        var captured = false
+        retryOperation(name) {
+            result = block(interaction())
+            captured = true
+        }
+        if (!captured) {
+            // Without this the cast below is a bare NPE that names nothing.
+            throw KabukiUsageError(
+                "read('$name') produced no value: an interceptor skipped it without calling proceed().",
+            )
+        }
+        @Suppress("UNCHECKED_CAST")
+        return result as T
+    }
+
+    /**
+     * Whether [block] passes, instead of failing the test. Runs silently, and waits
+     * out the timeout - pair it with [withTimeout]. Usage errors are not caught.
+     */
+    public fun passed(block: UiNode.() -> Unit): Boolean {
+        return scope.config.muted {
+            try {
+                block()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
+    }
+
+    /** The raw interaction - no retry, no report. Prefer [action] and [read]. */
     public fun <T> raw(block: (SemanticsNodeInteraction) -> T): T {
         return block(interaction())
     }

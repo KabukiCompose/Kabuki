@@ -55,6 +55,9 @@ public class KabukiConfig {
      * [strictListeners] on: a broken listener must not replace the real error.
      */
     internal fun notifyFailure(error: Throwable, block: KabukiListener.() -> Unit) {
+        if (mutedDepth > 0) {
+            return
+        }
         for (listener in listeners) {
             try {
                 listener.block()
@@ -69,11 +72,31 @@ public class KabukiConfig {
         }
     }
 
+    /** Depth of nested [muted] blocks - events are dropped while it is above zero. */
+    private var mutedDepth: Int = 0
+
+    /** Whether events are being dropped right now. */
+    internal val isMuted: Boolean
+        get() = mutedDepth > 0
+
+    /** Runs [block] without telling the listeners - see [kabuki.page.UiNode.passed]. */
+    internal fun <T> muted(block: () -> T): T {
+        mutedDepth++
+        return try {
+            block()
+        } finally {
+            mutedDepth--
+        }
+    }
+
     /**
      * Notifies every listener, honouring [strictListeners]. Report through this
      * rather than iterating [listeners], which silently loses the isolation.
      */
     public fun notifyListeners(block: KabukiListener.() -> Unit) {
+        if (mutedDepth > 0) {
+            return
+        }
         for (listener in listeners) {
             if (strictListeners) {
                 listener.block()

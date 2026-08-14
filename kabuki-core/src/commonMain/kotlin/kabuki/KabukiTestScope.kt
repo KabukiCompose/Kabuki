@@ -80,6 +80,13 @@ public class KabukiTestScope(
      * code, which turns the test specification into log decoration.
      */
     public fun step(description: String, block: () -> Unit) {
+        // Inside a probe there is nobody to tell. Counting anyway would leave a hole
+        // in the numbering of the steps that ARE reported - 1, 3 reads as a lost step.
+        // Counting inside a probe would leave a hole: "1, 3" reads as a lost step.
+        if (config.isMuted) {
+            block()
+            return
+        }
         stepCounters[stepCounters.lastIndex]++
         val info = StepInfo(label = stepCounters.joinToString("."), description = description)
         notifyListeners { onStepStart(info) }

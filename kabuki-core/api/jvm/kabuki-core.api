@@ -494,6 +494,7 @@ public final class kabuki/page/UiNode {
 	public static final field $stable I
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun action (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public final fun assertBackgroundColor-8_81llA (J)V
 	public final fun assertContentDescriptionContains (Ljava/lang/String;ZZ)V
 	public static synthetic fun assertContentDescriptionContains$default (Lkabuki/page/UiNode;Ljava/lang/String;ZZILjava/lang/Object;)V
@@ -523,7 +524,9 @@ public final class kabuki/page/UiNode {
 	public final fun getUnmerged ()Lkabuki/page/UiNode;
 	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
 	public final fun longClick ()V
+	public final fun passed (Lkotlin/jvm/functions/Function1;)Z
 	public final fun raw (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun read (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public final fun replaceText (Ljava/lang/String;)V
 	public final fun scrollTo ()V
 	public final fun scrollToIndex (I)V

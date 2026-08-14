@@ -105,6 +105,9 @@ tests have to be written twice. Kabuki exists so the same test covers both.
   watched. No `java.awt.Robot`, so windows do not fight over the cursor.
 - **Environment profiles** - scene size, density, window size class,
   `os()` branches and `assumeOs` / `assumeSizeClass`.
+- **Extension points instead of a dead end** - `action` and `read` run your own
+  code with the same retry and reporting as a built-in operation, `passed`
+  answers instead of failing the test, `raw` stays for the rest.
 - **Operation interceptors** - replace *how* an operation is performed
   (see `ClickViaSemanticsAction`, and `ClickOnUiThread` on desktop) instead of
   every test carrying a workaround.

@@ -119,7 +119,8 @@ private fun pause(millis: Long) {
 
 @OptIn(ExperimentalTestApi::class)
 private fun KabukiTestScope.withTreeDump(error: Throwable): Throwable {
-    if (!config.dumpSemanticsTreeOnFailure || error !is KabukiAssertionError) {
+    // A probe swallows the message - no point printing the whole tree for nobody.
+    if (config.isMuted || !config.dumpSemanticsTreeOnFailure || error !is KabukiAssertionError) {
         return error
     }
     // Dumped in the strategy's structural tree: under Smart that is the unmerged
