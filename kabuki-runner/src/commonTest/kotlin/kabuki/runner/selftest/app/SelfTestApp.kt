@@ -37,6 +37,7 @@ import kabuki.semantics.testListItem
 import kabuki.semantics.testListLength
 import kabuki.semantics.testTag
 import kabuki.semantics.testTintColor
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
 /**
@@ -151,7 +152,7 @@ enum class SelfTestSection {
 fun SelfTestApp(state: SelfTestAppState, section: SelfTestSection = SelfTestSection.All) {
     // A block appearing after a delay on the test's virtual clock - retry has to advance time
     LaunchedEffect(Unit) {
-        delay(1_500)
+        delay(1_500.milliseconds)
         state.delayedBlockVisible = true
     }
 
@@ -377,13 +378,17 @@ private fun ScrollableArea() {
             .testTag(SelfTestTags.LAZY_LIST),
     ) {
         items(LAZY_ITEM_COUNT) { index ->
-            Text(
-                text = "lazy item $index",
+            // The index sits on the ITEM, the text on a child - as in a real card.
+            // With both on one node a search by content could not tell "the item
+            // that contains the match" from "the matching node".
+            Box(
                 modifier = Modifier
                     .height(30.dp)
                     .testListItem(index)
                     .testTag(SelfTestTags.LAZY_ITEM),
-            )
+            ) {
+                Text(text = "lazy item $index")
+            }
         }
     }
 }

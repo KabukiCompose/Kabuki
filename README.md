@@ -108,6 +108,10 @@ tests have to be written twice. Kabuki exists so the same test covers both.
 - **Extension points instead of a dead end** - `action` and `read` run your own
   code with the same retry and reporting as a built-in operation, `passed`
   answers instead of failing the test, `raw` stays for the rest.
+- **Operations that wait for their effect** - `clickUntil("the dialog opens") { ... }`
+  repeats inside one retry, for the flaky "the tap did not register" case.
+- **List items by content** - `itemNodeWhere { withText("Anna") }` scrolls until
+  it finds the item, then addresses it by index: content changes, numbers do not.
 - **Operation interceptors** - replace *how* an operation is performed
   (see `ClickViaSemanticsAction`, and `ClickOnUiThread` on desktop) instead of
   every test carrying a workaround.
@@ -128,7 +132,10 @@ nothing but the tag helpers.
 
 ## Requirements
 
-Kotlin 2.4, Compose Multiplatform 1.11, JVM 11 bytecode.
+Kotlin **2.2** or newer, Compose Multiplatform 1.11, JVM 11 bytecode.
+
+Built with a newer compiler, but the artifacts carry metadata 2.2 and depend on
+stdlib 2.2 on purpose: a test library has no business forcing a Kotlin upgrade.
 
 ## License
 

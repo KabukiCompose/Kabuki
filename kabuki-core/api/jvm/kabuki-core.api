@@ -406,9 +406,11 @@ public final class kabuki/page/LazyList {
 	public final fun getListMatcher ()Landroidx/compose/ui/test/SemanticsMatcher;
 	public final fun getNode ()Lkabuki/page/UiNode;
 	public final fun getScopeProvider ()Lkotlin/jvm/functions/Function0;
+	public final fun indexOfItemWhere (Lkotlin/jvm/functions/Function1;)I
 	public final fun invoke (Lkotlin/jvm/functions/Function1;)V
 	public final fun itemMatcherAt (I)Landroidx/compose/ui/test/SemanticsMatcher;
 	public final fun itemNodeAt (I)Lkabuki/page/UiNode;
+	public final fun itemNodeWhere (Lkotlin/jvm/functions/Function1;)Lkabuki/page/UiNode;
 	public final fun scrollToIndex (I)V
 	public final fun visibleItems ()Lkabuki/page/UiNodeCollection;
 }
@@ -492,8 +494,8 @@ public abstract class kabuki/page/Screen : kabuki/page/NodeHost {
 
 public final class kabuki/page/UiNode {
 	public static final field $stable I
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/test/SemanticsMatcher;Ljava/lang/String;Lkotlin/time/Duration;Ljava/lang/Integer;Ljava/lang/String;Ljava/util/List;Lkabuki/SearchKind;Lkabuki/Tree;Lkabuki/page/NodeHost;Ljava/lang/String;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun action (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public final fun assertBackgroundColor-8_81llA (J)V
 	public final fun assertContentDescriptionContains (Ljava/lang/String;ZZ)V
@@ -519,6 +521,7 @@ public final class kabuki/page/UiNode {
 	public final fun assertTintColor-8_81llA (J)V
 	public final fun clearText ()V
 	public final fun click ()V
+	public final fun clickUntil (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
 	public final fun doubleClick ()V
 	public final fun getMerged ()Lkabuki/page/UiNode;
 	public final fun getUnmerged ()Lkabuki/page/UiNode;
@@ -532,6 +535,7 @@ public final class kabuki/page/UiNode {
 	public final fun scrollToIndex (I)V
 	public final fun textStyle ()Landroidx/compose/ui/text/TextStyle;
 	public final fun typeText (Ljava/lang/String;)V
+	public final fun withAssertion (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)Lkabuki/page/UiNode;
 	public final fun withTimeout-LRDsOJo (J)Lkabuki/page/UiNode;
 }
 

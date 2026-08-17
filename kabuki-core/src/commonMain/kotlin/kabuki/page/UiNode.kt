@@ -79,6 +79,8 @@ public class UiNode(
     private val searchKind: SearchKind = SearchKind.Structural,
     private val forcedTree: Tree? = null,
     private val host: NodeHost? = null,
+    private val assertionDescription: String? = null,
+    private val assertion: (() -> Unit)? = null,
 ) {
     private val scope: KabukiTestScope get() = scopeProvider()
 
@@ -449,6 +451,29 @@ public class UiNode(
         }
     }
 
+    /**
+     * The operation counts as done only when [assertion] passes - both live inside
+     * one retry, so the operation REPEATS until the effect appears:
+     *
+     * ```kotlin
+     * buyButton.withAssertion("the dialog opens") { dialog.root.assertIsDisplayed() }.click()
+     * ```
+     *
+     * Beware of actions that must not happen twice; a failure now costs the whole
+     * timeout.
+     */
+    public fun withAssertion(description: String, assertion: () -> Unit): UiNode {
+        return copy(assertionDescription = description, assertion = assertion)
+    }
+
+    /**
+     * Clicks until [assertion] passes - the common case of [withAssertion]:
+     * `buyButton.clickUntil("the dialog opens") { dialog.root.assertIsDisplayed() }`.
+     */
+    public fun clickUntil(description: String, assertion: () -> Unit) {
+        withAssertion(description, assertion).click()
+    }
+
     /** The raw interaction - no retry, no report. Prefer [action] and [read]. */
     public fun <T> raw(block: (SemanticsNodeInteraction) -> T): T {
         return block(interaction())
@@ -691,6 +716,8 @@ public class UiNode(
     private fun copy(
         timeout: Duration? = this.timeout,
         forcedTree: Tree? = this.forcedTree,
+        assertionDescription: String? = this.assertionDescription,
+        assertion: (() -> Unit)? = this.assertion,
     ): UiNode {
         return UiNode(
             scopeProvider = scopeProvider,
@@ -703,14 +730,21 @@ public class UiNode(
             searchKind = searchKind,
             forcedTree = forcedTree,
             host = host,
+            assertionDescription = assertionDescription,
+            assertion = assertion,
         )
+    }
+
+    /** Operation name for the report and the failure: `click until 'the dialog opens'`. */
+    private fun named(operation: String): String {
+        return assertionDescription?.let { "$operation until '$it'" } ?: operation
     }
 
     private fun retryOperation(
         operation: String,
         onTimeout: (cause: Throwable?, timeoutUsed: Duration) -> Throwable = { cause, timeoutUsed ->
             KabukiAssertionError(
-                message = "Operation '$operation' on node $description failed within $timeoutUsed." +
+                message = "Operation '${named(operation)}' on node $description failed within $timeoutUsed." +
                     "\n${treeHint()}" +
                     (cause?.let { "\nLast error: ${it.message}" } ?: "") +
                     (sameTagHint() ?: ""),
@@ -722,15 +756,27 @@ public class UiNode(
         val interceptors = scope.config.interceptors
         // The chain lives INSIDE retryUntilSuccess: a replacement installed by an
         // interceptor is retried exactly like the original operation would be.
-        val effective: () -> Unit = if (interceptors.isEmpty()) {
+        val intercepted: () -> Unit = if (interceptors.isEmpty()) {
             block
         } else {
             { runInterceptorChain(interceptors, index = 0, operation = operation, original = block) }
         }
+        // The post-assertion runs in the same attempt, after the interceptors: a
+        // check outside the retry could not make the operation repeat.
+        val check = assertion
+        val effective: () -> Unit = if (check == null) {
+            intercepted
+        } else {
+            {
+                intercepted()
+                // Answers NOW - waiting is this loop's job, not the check's.
+                scope.config.withDefaultTimeout(Duration.ZERO) { check() }
+            }
+        }
         scope.runOperation(
-            operation = operation,
+            operation = named(operation),
             nodeDescription = description,
-            timeout = timeout ?: scope.config.defaultTimeout,
+            timeout = timeout ?: scope.config.currentDefaultTimeout,
             onTimeout = onTimeout,
             block = effective,
         )

@@ -79,6 +79,26 @@ public class KabukiConfig {
     internal val isMuted: Boolean
         get() = mutedDepth > 0
 
+    private var timeoutOverride: Duration? = null
+
+    /** [defaultTimeout], unless something is overriding it - see [withDefaultTimeout]. */
+    internal val currentDefaultTimeout: Duration
+        get() = timeoutOverride ?: defaultTimeout
+
+    /**
+     * Runs [block] with a different default timeout - for a check that must answer
+     * NOW, since waiting out its own timeout would eat the retry it should trigger.
+     */
+    internal fun <T> withDefaultTimeout(timeout: Duration, block: () -> T): T {
+        val previous = timeoutOverride
+        timeoutOverride = timeout
+        return try {
+            block()
+        } finally {
+            timeoutOverride = previous
+        }
+    }
+
     /** Runs [block] without telling the listeners - see [kabuki.page.UiNode.passed]. */
     internal fun <T> muted(block: () -> T): T {
         mutedDepth++

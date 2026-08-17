@@ -4,6 +4,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.performScrollToNode
 import kabuki.KabukiAssertionError
 import kabuki.KabukiTestScope
 import kabuki.Tree
@@ -164,7 +166,7 @@ public class LazyList(
         scope.runOperation(
             operation = "assertLengthEquals($expected)",
             nodeDescription = description,
-            timeout = scope.config.defaultTimeout,
+            timeout = scope.config.currentDefaultTimeout,
             onTimeout = { cause, timeoutUsed ->
                 KabukiAssertionError(
                     message = buildString {
@@ -224,6 +226,65 @@ public class LazyList(
         item.node.assertIsDisplayed()
         item.apply(block)
         return item
+    }
+
+    /**
+     * Index of the first item whose CONTENT matches, scrolling until it is found.
+     * Needs `Modifier.testListItem(index)` on the items - content changes when the
+     * test acts on it, an index does not.
+     */
+    public fun indexOfItemWhere(build: NodeMatcherBuilder.() -> Unit): Int {
+        val scope = scopeProvider()
+        val builder = NodeMatcherBuilder().apply(build)
+        val content = builder.buildMatcher()
+        // The ITEM containing the match: a text search lands on an inner Text,
+        // which carries no index.
+        val itemMatcher = SemanticsMatcher.keyIsDefined(LazyListItemIndexKey)
+            .and(hasAnyAncestor(effectiveListMatcher()))
+            .and(content.or(hasAnyDescendant(content)))
+        val unmerged = scope.config.treeStrategy.structuralSearch == Tree.Unmerged
+        var found: Int? = null
+        scope.runOperation(
+            operation = "indexOfItemWhere(${builder.buildDescription()})",
+            nodeDescription = description,
+            timeout = scope.config.currentDefaultTimeout,
+            onTimeout = { cause, timeoutUsed ->
+                KabukiAssertionError(
+                    message = "No item of $description matches ${builder.buildDescription()} " +
+                        "within $timeoutUsed. Items need Modifier.testListItem(index) to be " +
+                        "addressable by content.",
+                    cause = cause,
+                )
+            },
+        ) {
+            scope.context.onNode(effectiveListMatcher(), useUnmergedTree = unmerged)
+                .performScrollToNode(itemMatcher)
+            // The FIRST match: onNode would fail when the content repeats.
+            found = scope.context.onAllNodes(itemMatcher, useUnmergedTree = unmerged)
+                .fetchSemanticsNodes()
+                .mapNotNull { node -> node.config.getOrNull(LazyListItemIndexKey) }
+                .minOrNull()
+                ?: throw AssertionError("No item with a published index matches")
+        }
+        return checkNotNull(found)
+    }
+
+    /**
+     * Finds an item by CONTENT, then works with it by index - see [indexOfItemWhere].
+     */
+    public inline fun <reified T : ListItem> itemWhere(
+        noinline build: NodeMatcherBuilder.() -> Unit,
+        noinline block: T.() -> Unit = {},
+    ): T {
+        return itemAt(indexOfItemWhere(build), block)
+    }
+
+    /**
+     * The node of the item found by CONTENT: `itemNodeWhere { withText("Anna") }.click()`.
+     * The untyped counterpart of [itemWhere], as [itemNodeAt] is of [itemAt].
+     */
+    public fun itemNodeWhere(build: NodeMatcherBuilder.() -> Unit): UiNode {
+        return itemNodeAt(indexOfItemWhere(build))
     }
 
     /**

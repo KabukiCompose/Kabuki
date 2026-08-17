@@ -1,5 +1,6 @@
 package kabuki.runner.selftest.tests
 
+import androidx.compose.ui.semantics.getOrNull
 import kabuki.KabukiAssertionError
 import kabuki.page.ListItem
 import kabuki.page.ListItemScope
@@ -9,7 +10,9 @@ import kabuki.runner.selftest.SelfTestCase
 import kabuki.runner.selftest.app.LAZY_ITEM_COUNT
 import kabuki.runner.selftest.app.SelfTestSection
 import kabuki.runner.selftest.app.SelfTestTags
+import kabuki.semantics.LazyListItemIndexKey
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -75,6 +78,94 @@ class LazyListSelfTest : SelfTestCase() {
                 items.itemNodeAt(LAZY_ITEM_COUNT).assertDoesNotExist()
             }
         }
+    }
+
+    @Test
+    fun anItemIsFoundByItsContentAndThenAddressedByIndex() = runTest(
+        name = "itemWhere",
+        section = SelfTestSection.Scrolling,
+    ) {
+        val far = LAZY_ITEM_COUNT - 3
+        step("An item far below the fold is found by its text") {
+            onScreen<SelfTestListScreen> {
+                // Not composed until the search scrolls to it.
+                items.itemNodeAt(far).assertDoesNotExist()
+
+                assertEquals(far, items.indexOfItemWhere { withText("lazy item $far") })
+            }
+        }
+
+        step("The found item is then used by index") {
+            onScreen<SelfTestListScreen> {
+                items.itemWhere<LazyRowItem>({ withText("lazy item $far") }) {
+                    assertEquals(far, index)
+                    node.assertIsDisplayed()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun theUntypedFormReturnsTheItemNodeItself() = runTest(
+        name = "itemNodeWhere",
+        section = SelfTestSection.Scrolling,
+    ) {
+        val far = LAZY_ITEM_COUNT - 5
+        onScreen<SelfTestListScreen> {
+            // The index, not "some node is displayed": the first item is on screen
+            // anyway, so a search that ignored the matcher would pass. Asserting text
+            // would not work either - the item is a plain Box, and a non-merging
+            // container never carries the text of its children.
+            val index = items.itemNodeWhere { withText("lazy item $far") }
+                .read("index") { it.fetchSemanticsNode().config.getOrNull(LazyListItemIndexKey) }
+
+            assertEquals(far, index)
+        }
+    }
+
+    @Test
+    fun severalMatchesResolveToTheFirstItem() = runTest(
+        name = "itemWhere with several matches",
+        section = SelfTestSection.Scrolling,
+    ) {
+        onScreen<SelfTestListScreen> {
+            // Every item matches, so several are composed at once - the search must
+            // answer with the FIRST one instead of failing on the ambiguity.
+            assertEquals(0, items.indexOfItemWhere { withText("lazy item", substring = true) })
+        }
+    }
+
+    @Test
+    fun aSearchAlsoFindsItemsAboveTheCurrentPosition() = runTest(
+        name = "itemWhere after scrolling away",
+        section = SelfTestSection.Scrolling,
+    ) {
+        onScreen<SelfTestListScreen> {
+            items.scrollToIndex(LAZY_ITEM_COUNT - 1)
+
+            // The list is at its end now, and the match is far ABOVE - a search that
+            // only scrolled forward would never reach it.
+            assertEquals(2, items.indexOfItemWhere { withText("lazy item 2") })
+        }
+    }
+
+    @Test
+    fun aContentSearchThatFindsNothingSaysWhatIsMissing() = runTest(
+        name = "itemWhere misses",
+        section = SelfTestSection.Scrolling,
+        config = { defaultTimeout = 1.seconds },
+    ) {
+        val error = assertFailsWith<KabukiAssertionError> {
+            onScreen<SelfTestListScreen> {
+                items.indexOfItemWhere { withText("no such item") }
+            }
+        }
+
+        // The likely cause is unmarked items, so the message names the modifier.
+        assertTrue(
+            "testListItem" in error.message.orEmpty(),
+            "The failure must point at the marking: ${error.message}",
+        )
     }
 }
 

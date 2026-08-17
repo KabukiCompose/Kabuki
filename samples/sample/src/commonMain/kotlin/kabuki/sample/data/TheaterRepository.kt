@@ -9,6 +9,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Fake repository with network-like delays - the source of asynchrony for
@@ -105,7 +106,7 @@ class TheaterRepository {
 
     private suspend fun <T> networkCall(delayMillis: Long, block: () -> T): T {
         return withContext(Dispatchers.Default) {
-            delay(delayMillis)
+            delay(delayMillis.milliseconds)
             block()
         }
     }

@@ -93,7 +93,7 @@ public class UiNodeCollection(
         scope.runOperation(
             operation = operation,
             nodeDescription = description,
-            timeout = timeout ?: scope.config.defaultTimeout,
+            timeout = timeout ?: scope.config.currentDefaultTimeout,
             onTimeout = { cause, timeoutUsed ->
                 KabukiAssertionError(
                     message = buildString {
