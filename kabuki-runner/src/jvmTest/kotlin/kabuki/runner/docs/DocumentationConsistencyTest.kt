@@ -2,6 +2,7 @@ package kabuki.runner.docs
 
 import java.io.File
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.Assume.assumeTrue
 
@@ -30,9 +31,13 @@ class DocumentationConsistencyTest {
             ARTIFACT.findAll(file.readText()).map { match -> file to match.groupValues[1] }
         }
 
-        // A guard for the guard: a regex that stops matching would make this test
-        // pass by checking nothing at all.
-        assertTrue(mentions.isNotEmpty(), "No artifact coordinates found - has the format changed?")
+        // A guard for the guard, checked on a known string rather than on whatever
+        // the docs happen to contain: a regex that stopped matching would otherwise
+        // make this test pass by checking nothing at all.
+        assertTrue(
+            ARTIFACT.containsMatchIn("io.github.kabukicompose:kabuki-core"),
+            "The artifact regex no longer matches a known coordinate",
+        )
 
         val unknown = mentions.filterNot { (_, artifact) -> artifact.withoutTargetSuffix() in modules }
         assertTrue(
@@ -51,7 +56,10 @@ class DocumentationConsistencyTest {
             SOURCE_PATH.findAll(file.readText()).map { match -> file to match.value }
         }
 
-        assertTrue(mentions.isNotEmpty(), "No source paths found in the docs - has the format changed?")
+        assertTrue(
+            SOURCE_PATH.containsMatchIn("kabuki-core/src/commonMain/kotlin/kabuki/page/UiNode.kt"),
+            "The source path regex no longer matches a known path",
+        )
 
         // Abbreviated paths (".../Something.kt") fail here on purpose: a path that
         // cannot be checked is a path that quietly rots after the next move.
@@ -60,6 +68,57 @@ class DocumentationConsistencyTest {
             broken.isEmpty(),
             "Documentation points at files that do not exist:\n" +
                 broken.joinToString("\n") { (file, path) -> "  ${file.name}: $path" },
+        )
+    }
+
+    @Test
+    fun theRussianReadmeKeepsUpWithTheEnglishOne() {
+        val (english, russian) = readmes()
+        assumeTrue(NO_DOCUMENTS, english.isFile && russian.isFile)
+        val englishText = english.readText()
+        val russianText = russian.readText()
+
+        // The translation is the first thing to rot, and the parts worth guarding
+        // are the ones a reader copies: coordinates, and the list of sections.
+        assertTrue(
+            COORDINATE.containsMatchIn(englishText),
+            "No artifact coordinates in README.md - format changed?",
+        )
+        assertEquals(
+            COORDINATE.findAll(englishText).map { it.value }.toSet(),
+            COORDINATE.findAll(russianText).map { it.value }.toSet(),
+            "README.ru.md offers different artifact coordinates",
+        )
+        assertEquals(
+            SECTION.findAll(englishText).count(),
+            SECTION.findAll(russianText).count(),
+            "README.ru.md has a different number of sections",
+        )
+    }
+
+    @Test
+    fun everyModuleNamedWithoutItsGroupIsRealToo() {
+        val documents = markdownFiles()
+        assumeTrue(NO_DOCUMENTS, documents.isNotEmpty())
+        val modules = declaredModules()
+        // Prose names a module without its group far more often than with it, and
+        // that is how `kabuki-interop-junit4` lived in the migration skill until
+        // 2026-08-18 - invisible to the coordinate check above, the very check
+        // that exists to stop invented artifact names.
+        val mentions = documents.flatMap { file ->
+            BARE_MODULE.findAll(file.readText()).map { match -> file to match.value }
+        }
+
+        assertTrue(
+            BARE_MODULE.containsMatchIn("add kabuki-runner to commonTest"),
+            "The bare module regex no longer matches a known name",
+        )
+
+        val unknown = mentions.filterNot { (_, name) -> name.withoutTargetSuffix() in modules }.distinct()
+        assertTrue(
+            unknown.isEmpty(),
+            "Documentation names modules that do not exist: " +
+                unknown.joinToString { (file, name) -> "${file.name}: $name" },
         )
     }
 
@@ -102,9 +161,16 @@ class DocumentationConsistencyTest {
     }
 
     private fun markdownFiles(): List<File> {
-        return listOf(repoRoot.resolve("docs"), repoRoot.resolve(".claude"))
+        val fromDirectories = listOf(repoRoot.resolve("docs"), repoRoot.resolve(".claude"))
             .filter { dir -> dir.isDirectory }
             .flatMap { dir -> dir.walkTopDown().filter { file -> file.extension == "md" }.toList() }
+        // Only the English one is added by hand - the translation lives in docs/
+        // and arrives with the walk above.
+        return listOf(repoRoot.resolve("README.md")).filter { file -> file.isFile } + fromDirectories
+    }
+
+    private fun readmes(): List<File> {
+        return listOf(repoRoot.resolve("README.md"), repoRoot.resolve("docs/README.ru.md"))
     }
 
     private fun skillFile(): File {
@@ -121,8 +187,8 @@ class DocumentationConsistencyTest {
 
     private companion object {
         /**
-         * The documents are kept outside the repository for now, so a clean
-         * checkout has nothing to check. That is a SKIP, not a pass: an empty
+         * Part of the documentation is kept outside the repository, so a clean
+         * checkout may have less to check. That is a SKIP, not a pass: an empty
          * result must never look like a green guard.
          *
          * The `isNotEmpty` assertions below stay for the opposite case - documents
@@ -132,8 +198,11 @@ class DocumentationConsistencyTest {
         const val NO_DOCUMENTS = "Documentation is not part of this checkout"
 
         val ARTIFACT = Regex("io\\.github\\.kabukicompose:([a-z0-9-]+)")
+        val BARE_MODULE = Regex("\\bkabuki-[a-z0-9-]+")
+        val COORDINATE = Regex("io\\.github\\.kabukicompose:[a-z0-9-]+:[0-9A-Za-z.-]+")
         val PACKAGE = Regex("`(kabuki(?:\\.[a-z]+)+)`")
         val MODULE = Regex("\":([a-z0-9-]+)\"")
-        val SOURCE_PATH = Regex("(?:kabuki-[a-z0-9-]+|samples)/src/[A-Za-z0-9_/.-]+\\.(?:kt|pro)")
+        val SECTION = Regex("^## ", RegexOption.MULTILINE)
+        val SOURCE_PATH = Regex("(?:kabuki-[a-z0-9-]+|samples/[a-z0-9-]+)/src/[A-Za-z0-9_/.-]+\\.(?:kt|pro)")
     }
 }

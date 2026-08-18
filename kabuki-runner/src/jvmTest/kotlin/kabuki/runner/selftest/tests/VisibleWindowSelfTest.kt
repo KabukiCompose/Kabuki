@@ -4,12 +4,15 @@ import java.awt.Window
 import kabuki.listener.KabukiListener
 import kabuki.listener.TestInfo
 import kabuki.listener.TestResult
+import kabuki.runner.WINDOW_PROPERTY
 import kabuki.runner.WindowMode
 import kabuki.runner.selftest.DesktopSelfTestCase
 import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import org.junit.Assume.assumeTrue
+import org.junit.Before
 
 /**
  * Self-test for a real window running alongside the headless scene.
@@ -21,6 +24,16 @@ import kotlin.test.assertFailsWith
  */
 class VisibleWindowSelfTest : DesktopSelfTestCase() {
 
+    @Before
+    fun onlyWhenAskedFor() {
+        // A window flashing over the screen every time anyone runs the suite is a
+        // poor trade for a check nobody is watching. Run them on purpose:
+        // ./gradlew :kabuki-runner:jvmTest -Pkabuki.window
+        assumeTrue(
+            "Visible-window tests are opt-in: pass -Pkabuki.window",
+            System.getProperty(WINDOW_PROPERTY) == "true",
+        )
+    }
 
 
     @Test

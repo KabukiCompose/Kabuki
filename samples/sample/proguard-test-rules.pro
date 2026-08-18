@@ -1,4 +1,4 @@
-# R8 rules for the instrumented TEST apk. Details: docs/r8_minification.md.
+# R8 rules for the instrumented TEST apk.
 #
 # It has to stay minified: AGP shrinks it with the app's mapping, so turning
 # shrinking off breaks every reference to an obfuscated app class.

@@ -35,6 +35,13 @@ allprojects {
         metaInf.from(rootProject.file("LICENSE"))
     }
 
+    // Desktop tests can mirror the scene into a real window. Off unless asked for -
+    // measured, they cost 3.5 of the suite's 4 minutes:
+    //   ./gradlew jvmTest -Pkabuki.window
+    tasks.withType<Test>().configureEach {
+        systemProperty("kabuki.window", providers.gradleProperty("kabuki.window").isPresent)
+    }
+
     // KotlinCompilationTask, not KotlinCompile: the latter covers only JVM and
     // Android, so JS and Native targets would slip through.
     // -PallowWarnings turns this off when a toolchain update floods the build.

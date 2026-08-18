@@ -18,7 +18,7 @@ activityCompose = "1.12.4"
 coroutines = "1.10.2"
 binaryCompatibilityValidator = "0.16.3"
 androidxTestRunner = "1.7.0"
-# Pinned: the transitive Espresso is 3.5.0, which breaks on Android 16.
+# Only a constraint in kabuki-core: the transitive 3.5.0 breaks on Android 16.
 androidxEspresso = "3.7.0"
 androidxComposeUi = "1.11.1"
 

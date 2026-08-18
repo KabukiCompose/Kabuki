@@ -1,4 +1,4 @@
-# R8 rules for the minified test run. Full findings: docs/r8_minification.md.
+# R8 rules for the minified test run (-Pkabuki.minifiedTests).
 
 # THE RULE THIS FILE EXISTS FOR: Kabuki builds a tag as "EnumSimpleName.ENTRY" at
 # runtime, so obfuscation breaks it. Measured: PlaybillTags -> z3.k.

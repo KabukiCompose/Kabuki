@@ -9,11 +9,19 @@ import androidx.compose.ui.semantics.semantics
  * Enum-to-tag conversion shared by production code ([testTag]) and test matchers
  * (`withTag(enum)`). Format: `"PlaybillTags.SCREEN"` - the simple class name,
  * because `KClass.qualifiedName` is unavailable on JS and wasm.
+ *
+ * The class name comes from [declaringEnumName], not from `this::class`: a
+ * constant with a body is an anonymous subclass whose simple name is the
+ * CONSTANT's. That gave `SCREEN.SCREEN` and, worse, one tag for two different
+ * enums sharing an entry name.
  */
 public val Enum<*>.tagName: String
     get() {
-        return "${this::class.simpleName}.$name"
+        return "$declaringEnumName.$name"
     }
+
+/** Simple name of the enum CLASS, anonymous subclasses of its constants aside. */
+internal expect val Enum<*>.declaringEnumName: String
 
 /**
  * Parameters attached to a test tag, kept separately from the tag itself.

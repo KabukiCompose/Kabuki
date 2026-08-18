@@ -16,14 +16,14 @@ import androidx.compose.ui.semantics.semantics
  *
  * Tests then use `lazyList(...) { itemType(...) }` and `itemAt(index)`.
  */
-public val LazyListItemIndexKey: SemanticsPropertyKey<Int> = SemanticsPropertyKey("LazyListItemIndex")
+public val LazyListItemIndexKey: SemanticsPropertyKey<Int> = SemanticsPropertyKey("KabukiLazyListItemIndex")
 
 /**
  * Total item count of a lazy list, set on the list container. Lazy lists only
  * compose visible items, so tests cannot count the rest - production code
  * publishes the full length explicitly via [testListLength].
  */
-public val LazyListLengthKey: SemanticsPropertyKey<Int> = SemanticsPropertyKey("LazyListLength")
+public val LazyListLengthKey: SemanticsPropertyKey<Int> = SemanticsPropertyKey("KabukiLazyListLength")
 
 /** Marks a lazy list item with its [index]. See [LazyListItemIndexKey]. */
 public fun Modifier.testListItem(index: Int): Modifier {

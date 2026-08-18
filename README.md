@@ -1,10 +1,12 @@
 # Kabuki
 
+[Русская версия](docs/README.ru.md)
+
 UI tests for Compose Multiplatform. One test, written once, runs on desktop
 (headless, no emulator) and on an Android device.
 
 > **Status: early development.** The API changes without notice and nothing is
-> published to Maven Central yet. Build locally with `./gradlew publishToMavenLocal`.
+> published to Maven Central yet - see [Setup](#setup).
 
 ## What a test looks like
 
@@ -101,6 +103,9 @@ tests have to be written twice. Kabuki exists so the same test covers both.
   reported through the listener SPI on every platform.
 - **Semantics tree dump in the failure message** - what was actually on screen
   at the moment of failure.
+- **A stall watchdog** - a platform call that blocks cannot be interrupted, but
+  it no longer hangs the run in silence: Kabuki names the stuck operation and
+  its node, in the console or in a logger of your own.
 - **A real window next to the headless scene** on desktop, so a test can be
   watched. No `java.awt.Robot`, so windows do not fight over the cursor.
 - **Environment profiles** - scene size, density, window size class,
@@ -130,6 +135,35 @@ tests have to be written twice. Kabuki exists so the same test covers both.
 Only `kabuki-semantics` is linked into the application itself, and it carries
 nothing but the tag helpers.
 
+## Setup
+
+Nothing is on Maven Central yet, so install it from a clone:
+
+```bash
+git clone https://github.com/KabukiCompose/Kabuki
+cd Kabuki && ./gradlew publishToMavenLocal
+```
+
+Then, in the module that holds your tests:
+
+```kotlin
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("io.github.kabukicompose:kabuki-semantics:0.1.0-SNAPSHOT")
+        }
+        commonTest.dependencies {
+            implementation("io.github.kabukicompose:kabuki-runner:0.1.0-SNAPSHOT")
+        }
+    }
+}
+```
+
+On Android a few more lines are needed, and one of them is easy to miss: without
+it every test fails with `No compose hierarchies found in the app`, which says
+nothing about the two settings that actually cause it. Kabuki names them in the
+failure; the whole Android setup is in [Setup and pitfalls](docs/setup.md).
+
 ## Requirements
 
 Kotlin **2.2** or newer, Compose Multiplatform 1.11, JVM 11 bytecode.
@@ -140,3 +174,5 @@ stdlib 2.2 on purpose: a test library has no business forcing a Kotlin upgrade.
 ## License
 
 [Apache 2.0](LICENSE)
+
+The Kabuki name and logo are not covered by the Apache 2.0 license.

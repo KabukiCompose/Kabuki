@@ -20,6 +20,22 @@ public class KabukiConfig {
     public var pollingInterval: Duration = Duration.ZERO
 
     /**
+     * How long past its timeout an operation may sit before Kabuki calls it stuck.
+     * The timeout is only checked between attempts, so a call blocked inside one
+     * would otherwise hang the run in silence. ZERO turns the watchdog off.
+     */
+    public var stallWarningAfter: Duration = 10.seconds
+
+    /**
+     * Where the stall warning goes - the console by default, since listeners are
+     * not thread-safe and the watchdog speaks from its own thread. Point it at your
+     * logger if a run collects output some other way.
+     *
+     * Called from a background thread. If it throws, Kabuki falls back to the console.
+     */
+    public var stallReporter: (message: String) -> Unit = { message -> println(message) }
+
+    /**
      * Which semantics tree each kind of search looks at. Deliberately not a single
      * boolean: one switch answers two different questions and is wrong for half of
      * them - see [TreeStrategy].

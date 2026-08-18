@@ -44,6 +44,7 @@ import kabuki.KabukiTestScope
 import kabuki.KabukiUsageError
 import kabuki.SearchKind
 import kabuki.Tree
+import kabuki.internal.requireLiveHierarchy
 import kabuki.internal.runOperation
 import kabuki.semantics.BackgroundColorKey
 import kabuki.semantics.TestTagParamsKey
@@ -67,6 +68,12 @@ import kotlin.time.Duration
  * for its container at operation time - so a component's root may be declared after
  * the nodes it scopes.
  */
+/** Enough lookalike tags to show the pattern without burying the failure message. */
+private const val MAX_LOOKALIKE_TAGS = 5
+
+/** Up to this length an enum name is assumed to be R8's work, not a person's. */
+private const val MINIFIED_NAME_LENGTH = 3
+
 @OptIn(ExperimentalTestApi::class)
 public class UiNode(
     private val scopeProvider: () -> KabukiTestScope,
@@ -216,6 +223,8 @@ public class UiNode(
     /** The node exists but is not visible (scrolled away, zero size, hidden). */
     public fun assertIsNotDisplayed() {
         retryOperation("assertIsNotDisplayed") {
+            // No hierarchy check here: Compose's own assertIsNotDisplayed demands a
+            // root and throws on an empty scene - measured by mutation.
             interaction().assertIsNotDisplayed()
         }
     }
@@ -227,6 +236,8 @@ public class UiNode(
     public fun assertDoesNotExist() {
         retryOperation("assertDoesNotExist") {
             interaction().assertDoesNotExist()
+            // Nothing is absent from a scene that composed nothing.
+            scope.requireLiveHierarchy()
         }
     }
 
@@ -550,7 +561,7 @@ public class UiNode(
                         }
                         descendantWithTextHint(expected)?.let { hint -> appendLine(hint) }
                         append(treeHint())
-                        sameTagHint()?.let { hint -> append(hint) }
+                        append(tagHints())
                     },
                     cause = cause,
                 )
@@ -675,6 +686,72 @@ public class UiNode(
         }
     }
 
+    /**
+     * The same entry on screen under a different class name - and the message names
+     * both readings. Usually the test asks for the wrong enum: names like `SCREEN`
+     * and `LIST` repeat across the enums of any real app. Rarely it is R8, which
+     * renames the class half of `EnumSimpleName.ENTRY`.
+     */
+    private fun lookalikeTagHint(): String? {
+        val tag = diagnosticTag ?: return null
+        // Empty when the tag carries no dot, i.e. is not an enum tag at all.
+        val entry = tag.substringAfterLast('.', missingDelimiterValue = "")
+        if (entry.isEmpty()) {
+            return null
+        }
+        val onScreen = runCatching {
+            val unmerged = scope.config.treeStrategy.structuralSearch == Tree.Unmerged
+            scope.context
+                .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.TestTag), useUnmergedTree = unmerged)
+                .fetchSemanticsNodes()
+                .mapNotNull { node -> node.config.getOrNull(SemanticsProperties.TestTag) }
+        }.getOrNull().orEmpty()
+
+        // The tag IS there and the operation failed for its own reasons - naming
+        // lookalikes here would send the reader after a name that is already right.
+        if (tag in onScreen) {
+            return null
+        }
+        val lookalikes = onScreen
+            .filter { present -> present.endsWith(".$entry") }
+            .distinct()
+            // A long list would bury the message it is attached to.
+            .take(MAX_LOOKALIKE_TAGS)
+
+        if (lookalikes.isEmpty()) {
+            return null
+        }
+        return buildString {
+            appendLine()
+            appendLine("The same entry is on screen under another class: ${lookalikes.joinToString(", ")}")
+            // Minified names get the R8 advice; readable ones almost always mean the
+            // screen on display is not the one the test expects. Sending everybody
+            // to proguard rules would misdirect the common case.
+            if (lookalikes.all { name -> looksMinified(name) }) {
+                append("Looks minified: R8 renamed the enum - keep it with -keepnames class **${tag.substringBeforeLast('.')}")
+            } else {
+                append("So this is either another screen than the test expects, or the wrong enum in the test.")
+            }
+        }
+    }
+
+    /** R8 names are short and lower-case; a real tag enum is neither. */
+    private fun looksMinified(tag: String): Boolean {
+        val enumName = tag.substringBeforeLast('.')
+        return enumName.length <= MINIFIED_NAME_LENGTH || enumName.none { symbol -> symbol.isUpperCase() }
+    }
+
+    /**
+     * Both tag diagnostics, empty when neither applies. Skipped inside a probe:
+     * each hint walks the tree, and `passed { }` throws the message away.
+     */
+    private fun tagHints(): String {
+        if (scope.config.isMuted) {
+            return ""
+        }
+        return (sameTagHint() ?: "") + (lookalikeTagHint() ?: "")
+    }
+
     private fun interaction(): SemanticsNodeInteraction {
         val unmerged = tree() == Tree.Unmerged
         val effective = effectiveMatcher()
@@ -747,7 +824,7 @@ public class UiNode(
                 message = "Operation '${named(operation)}' on node $description failed within $timeoutUsed." +
                     "\n${treeHint()}" +
                     (cause?.let { "\nLast error: ${it.message}" } ?: "") +
-                    (sameTagHint() ?: ""),
+                    tagHints(),
                 cause = cause,
             )
         },
@@ -803,4 +880,5 @@ public class UiNode(
             ),
         )
     }
+
 }

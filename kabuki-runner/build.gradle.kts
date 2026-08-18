@@ -55,8 +55,7 @@ kotlin {
 
         androidInstrumentedTest.dependencies {
             implementation(libs.androidx.testRunner)
-            // Pulls Espresso up from the transitive 3.5.0 - see the catalog comment.
-            implementation(libs.androidx.espressoCore)
+            // No Espresso line: kabuki-core's constraint lifts the transitive 3.5.0.
         }
     }
 }
@@ -87,11 +86,14 @@ dependencies {
     debugImplementation(libs.androidx.composeUiTestManifest)
 }
 
-// DocumentationConsistencyTest reads these files. Undeclared, they would leave the
-// task up-to-date after every doc edit - a guard that never fires.
 tasks.withType<Test>().configureEach {
+    // DocumentationConsistencyTest reads the files below. Undeclared, they would
+    // leave the task up-to-date after every doc edit - a guard that never fires.
     inputs.files(rootProject.fileTree("docs") { include("**/*.md") })
         .withPropertyName("documentation")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.file("README.md"))
+        .withPropertyName("readme")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.file(rootProject.file("settings.gradle.kts"))
         .withPropertyName("settings")

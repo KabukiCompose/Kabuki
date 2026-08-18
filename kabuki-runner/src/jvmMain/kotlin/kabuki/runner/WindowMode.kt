@@ -24,16 +24,28 @@ public sealed interface WindowMode {
         val alwaysOnTop: Boolean = true,
     ) : WindowMode
 
-    /** CI (env CI / GITLAB_CI) -> Headless, locally -> Visible with defaults. */
+    /**
+     * Decided at run time: `-Dkabuki.window=true|false` if set, otherwise headless
+     * on CI and visible locally. A window is welcome while writing one test and
+     * unbearable across a suite - hence the switch.
+     */
     public data object Auto : WindowMode
 }
 
+/** System property that decides [WindowMode.Auto]: `-Dkabuki.window=false` keeps windows off. */
+internal const val WINDOW_PROPERTY: String = "kabuki.window"
+
 internal fun WindowMode.resolve(): WindowMode {
     return when (this) {
-        is WindowMode.Auto -> {
-            val isCi = System.getenv("CI") != null || System.getenv("GITLAB_CI") != null
-            if (isCi) WindowMode.Headless else WindowMode.Visible()
-        }
+        is WindowMode.Auto -> if (windowsWanted()) WindowMode.Visible() else WindowMode.Headless
         else -> this
     }
+}
+
+/** An explicit answer beats a guess; without one, CI means headless. */
+private fun windowsWanted(): Boolean {
+    System.getProperty(WINDOW_PROPERTY)?.let { asked ->
+        return asked.toBooleanStrictOrNull() ?: true
+    }
+    return System.getenv("CI") == null && System.getenv("GITLAB_CI") == null
 }

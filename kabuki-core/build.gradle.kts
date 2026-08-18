@@ -27,6 +27,25 @@ kotlin {
             // to expose transitively.
             api(libs.compose.runtime)
             api(libs.compose.ui)
+            // A timer off the test thread, for the stall watchdog. Compose pulls
+            // coroutines in anyway - declared so the build does not rest on that.
+            implementation(libs.kotlinx.coroutinesCore)
+        }
+    }
+}
+
+// Up to 3.6.1 Espresso reaches InputManager only through the static getInstance,
+// which Android 16 removed: waiting for idle builds a UiController, that builds an
+// event injector, and the injector dies on the missing method. Checked in the
+// bytecode of every release - 3.7.0 is the first with a getSystemService fallback.
+//
+// That old Espresso is OURS: it rides in on androidx.compose.ui:ui-test-android,
+// which the api dependency above hands to every consumer. A constraint rather than
+// a dependency - Kabuki uses no Espresso itself, it only names the broken versions.
+dependencies {
+    constraints {
+        add("androidMainApi", libs.androidx.espressoCore.get().toString()) {
+            because("up to 3.6.1 Espresso only knows InputManager.getInstance, removed in Android 16")
         }
     }
 }

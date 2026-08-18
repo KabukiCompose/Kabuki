@@ -64,11 +64,19 @@ public class KabukiTestScope(
         boundHosts += host
     }
 
+    /**
+     * Whether this test filled the scene itself. An empty scene after [setContent]
+     * is a broken setup; before it, the content may still be on its way.
+     */
+    internal var contentInstalled: Boolean = false
+        private set
+
     /** Installs the content into the headless scene (and, via the runner hook, into a visible window). */
     public fun setContent(content: @Composable () -> Unit) {
         onSetContent?.invoke(content)
         context.setContent(content)
         context.waitForIdle()
+        contentInstalled = true
     }
 
     /**
@@ -80,9 +88,8 @@ public class KabukiTestScope(
      * code, which turns the test specification into log decoration.
      */
     public fun step(description: String, block: () -> Unit) {
-        // Inside a probe there is nobody to tell. Counting anyway would leave a hole
-        // in the numbering of the steps that ARE reported - 1, 3 reads as a lost step.
-        // Counting inside a probe would leave a hole: "1, 3" reads as a lost step.
+        // Inside a probe there is nobody to tell, and counting anyway would leave a
+        // hole among the steps that ARE reported: "1, 3" reads as a lost step.
         if (config.isMuted) {
             block()
             return

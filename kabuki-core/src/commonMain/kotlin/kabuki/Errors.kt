@@ -9,10 +9,10 @@ package kabuki
 public class KabukiAssertionError(message: String, cause: Throwable? = null) : AssertionError(message, cause)
 
 /**
- * The library is used in a way that cannot work - a page object bound to no test,
- * a singleton component inside two scoping owners.
+ * The test cannot work as written - a page object bound to no test, a singleton
+ * component inside two scoping owners, a scene that composed nothing at all.
  *
  * Retry lets this type through instead of waiting out the timeout: the UI is not
- * late, the description of it is wrong.
+ * late, the description of it (or the setup around it) is wrong.
  */
-public class KabukiUsageError(message: String) : IllegalStateException(message)
+public class KabukiUsageError(message: String, cause: Throwable? = null) : IllegalStateException(message, cause)

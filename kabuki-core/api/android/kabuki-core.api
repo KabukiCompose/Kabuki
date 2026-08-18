@@ -45,6 +45,8 @@ public final class kabuki/KabukiConfig {
 	public final fun getListeners ()Ljava/util/List;
 	public final fun getMaxTreeDumpLines ()I
 	public final fun getPollingInterval-UwyO8pc ()J
+	public final fun getStallReporter ()Lkotlin/jvm/functions/Function1;
+	public final fun getStallWarningAfter-UwyO8pc ()J
 	public final fun getStrictListeners ()Z
 	public final fun getTreeStrategy ()Lkabuki/TreeStrategy;
 	public final fun notifyListeners (Lkotlin/jvm/functions/Function1;)V
@@ -52,6 +54,8 @@ public final class kabuki/KabukiConfig {
 	public final fun setDumpSemanticsTreeOnFailure (Z)V
 	public final fun setMaxTreeDumpLines (I)V
 	public final fun setPollingInterval-LRDsOJo (J)V
+	public final fun setStallReporter (Lkotlin/jvm/functions/Function1;)V
+	public final fun setStallWarningAfter-LRDsOJo (J)V
 	public final fun setStrictListeners (Z)V
 	public final fun setTreeStrategy (Lkabuki/TreeStrategy;)V
 }
@@ -89,7 +93,8 @@ public final class kabuki/KabukiTestScope {
 
 public final class kabuki/KabukiUsageError : java/lang/IllegalStateException {
 	public static final field $stable I
-	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class kabuki/Orientation : java/lang/Enum {

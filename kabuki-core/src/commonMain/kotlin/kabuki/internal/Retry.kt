@@ -41,6 +41,7 @@ internal fun KabukiTestScope.runOperation(
 
     val started = TimeSource.Monotonic.markNow()
     var attempts = 0
+    val watchdog = startStallWatchdog(config, operation, nodeDescription, timeout)
 
     try {
         retryUntilSuccess(
@@ -55,6 +56,8 @@ internal fun KabukiTestScope.runOperation(
         val failure = OperationResult.Failed(e, attempts, started.elapsedNow())
         config.notifyFailure(e) { onOperationFinish(info, failure) }
         throw e
+    } finally {
+        watchdog?.cancel()
     }
 
     val success = OperationResult.Succeeded(attempts, started.elapsedNow())
@@ -79,6 +82,19 @@ private fun KabukiTestScope.retryUntilSuccess(
 ) {
     var lastError: Throwable? = null
     val pollingMillis = config.pollingInterval.inWholeMilliseconds
+    // setContent composes synchronously, so an empty scene after it is broken, not
+    // slow. A scene Kabuki did not fill (interop over a foreign rule) still waits.
+    val stopOnEmptyScene = contentInstalled
+
+    fun retryAfter(error: Throwable): Boolean {
+        if (stopOnEmptyScene) {
+            emptySceneErrorOrNull(error)?.let { fatal -> throw fatal }
+        }
+        lastError = error
+        pause(pollingMillis)
+        return false
+    }
+
     try {
         context.waitUntil(
             conditionDescription = conditionDescription,
@@ -88,25 +104,23 @@ private fun KabukiTestScope.retryUntilSuccess(
                 block()
                 true
             } catch (e: AssertionError) {
+                // No empty-scene check: measured, Compose raises that as an ISE.
                 lastError = e
                 pause(pollingMillis)
                 false
             } catch (e: KabukiUsageError) {
-                // Not something the UI will get right on the next attempt: the page
-                // object itself is wrong. Waiting out the timeout on it would hide
-                // the message that explains what to fix.
+                // The page object is wrong, not the UI late. Waiting out the timeout
+                // would hide the message that explains what to fix.
                 throw e
             } catch (e: IllegalStateException) {
-                lastError = e
-                pause(pollingMillis)
-                false
+                retryAfter(e)
             } catch (e: IllegalArgumentException) {
-                lastError = e
-                pause(pollingMillis)
-                false
+                retryAfter(e)
             }
         }
     } catch (e: ComposeTimeoutException) {
+        // The slow way to the same verdict: the whole timeout, still nothing composed.
+        emptySceneErrorOrNull(lastError)?.let { fatal -> throw fatal }
         throw withTreeDump(onTimeout(lastError, timeout))
     }
 }
