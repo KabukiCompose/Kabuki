@@ -114,3 +114,73 @@ jobs:
             build/*/reports/detekt/**
             build/*/reports/lint-results*
           retention-days: 7
+
+  # A consumer sees the artifacts, not the source tree: the metadata they carry
+  # and the stdlib they drag in. This build is on Kotlin 2.2 - the version the
+  # README promises - and it is the only place that check happens.
+  consumer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Publish to the local repository
+        run: ./gradlew publishToMavenLocal --stacktrace
+
+      - name: Build a consumer on Kotlin 2.2
+        run: ./gradlew -p consumer-check build --stacktrace
+
+  # The three visible-window tests are opt-in locally, so CI is the only place
+  # they ever run. A virtual display is all they need.
+  window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Install a virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Visible-window tests
+        run: >
+          xvfb-run --auto-servernum
+          ./gradlew :kabuki-runner:jvmTest --tests "*VisibleWindowSelfTest*"
+          -Pkabuki.window --stacktrace
+
+  # The workflows themselves are code, and the ways they go wrong - injections,
+  # over-broad permissions, unpinned actions - have their own linter.
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint the workflows
+        run: pipx run zizmor --persona=regular .github/workflows/
