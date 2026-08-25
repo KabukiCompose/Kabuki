@@ -18,9 +18,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Everything here depends on the JDK the build runs on: jvmToolchain is not set
+  # on purpose (it would shut out anyone below 21), so the bytecode level comes
+  # from a compiler flag and the compiler itself comes from the runner.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      # One red cell should not hide the state of the other.
+      fail-fast: false
+      matrix:
+        java: [17, 21]
     steps:
       # Pinned by full SHA, not by tag: tags are mutable pointers, and rewriting
       # them is exactly how tj-actions compromised 23k repositories in 2025.
@@ -33,7 +41,7 @@ jobs:
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
-          java-version: 21
+          java-version: ${{ matrix.java }}
 
       # gradle-wrapper.jar is a binary this workflow runs sight unseen; a swapped
       # one in a pull request would be remote code execution on our runner.
@@ -51,6 +59,38 @@ jobs:
       - name: Desktop tests
         run: ./gradlew :kabuki-runner:jvmTest :kabuki-junit4:jvmTest --stacktrace
 
+      # Without the reports a red run is a wall of text and nothing to open.
+      - name: Keep the reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          # Artifact names must differ across matrix cells.
+          name: test-reports-jdk${{ matrix.java }}
+          path: |
+            build/*/reports/tests/**
+            build/*/test-results/**
+          retention-days: 7
+
+  # Static checks read the code, not the JDK that compiled it, so one run is
+  # enough. Kept apart from the matrix to say so, and to run alongside it.
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
       - name: Public API
         run: ./gradlew apiCheck --stacktrace
 
@@ -60,14 +100,17 @@ jobs:
       - name: Static analysis
         run: ./gradlew detektMainJvm detektDebugAndroid --stacktrace
 
-      # Without the reports a red run is a wall of text and nothing to open.
+      # Android Lint has broken this build before, and it looks at androidMain
+      # only - nothing else in the pipeline does.
+      - name: Android Lint
+        run: ./gradlew lint --stacktrace
+
       - name: Keep the reports of a failed run
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-reports
+          name: static-analysis-reports
           path: |
-            build/*/reports/tests/**
-            build/*/test-results/**
             build/*/reports/detekt/**
+            build/*/reports/lint-results*
           retention-days: 7
