@@ -17,6 +17,8 @@ androidTargetSdk = "37"
 activityCompose = "1.12.4"
 coroutines = "1.10.2"
 binaryCompatibilityValidator = "0.16.3"
+detekt = "2.0.0-alpha.6"
+composeRules = "0.6.4"
 androidxTestRunner = "1.7.0"
 # Only a constraint in kabuki-core: the transitive 3.5.0 breaks on Android 16.
 androidxEspresso = "3.7.0"
@@ -35,6 +37,7 @@ androidx-testRunner = { module = "androidx.test:runner", version.ref = "androidx
 androidx-espressoCore = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxEspresso" }
 androidx-composeUiTestManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidxComposeUi" }
 kotlinx-coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+composeRules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRules" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -43,3 +46,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

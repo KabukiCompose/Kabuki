@@ -18,7 +18,7 @@ public fun KabukiTestScope.os(
         Os.MacOs -> macos
         Os.Android -> android
         Os.Browser -> web
-    } ?: throw IllegalStateException(
+    } ?: error(
         "os() fork has no branch for the current OS ${profile.os}. " +
             "Declared branches: " + listOfNotNull(
             windows?.let { "windows" },

@@ -48,29 +48,34 @@ class TheaterRepository {
             gate.await()
             return performances
         }
-        return networkCall(1_500) {
+        return networkCall(PLAYBILL_DELAY) {
             performances
         }
     }
 
     suspend fun loadDetails(id: String): Performance {
-        return networkCall(800) {
+        return networkCall(DETAILS_DELAY) {
             performances.first { it.id == id }
         }
     }
 
+    // The id is part of the shape a real repository would have; this fake answers
+    // the same for every performance, and pretending otherwise would only make the
+    // sample harder to read.
+    @Suppress("UnusedParameter")
     suspend fun loadSeats(performanceId: String): List<Seat> {
-        return networkCall(600) {
+        return networkCall(SEATS_DELAY) {
             (1..ROWS).flatMap { row ->
                 (1..SEATS_PER_ROW).map { number ->
-                    Seat(row = row, number = number, taken = (row * 31 + number * 7) % 4 == 0)
+                    Seat(row = row, number = number, taken = isTaken(row, number))
                 }
             }
         }
     }
 
+    @Suppress("UnusedParameter")
     suspend fun loadReviews(performanceId: String): List<Review> {
-        return networkCall(500) {
+        return networkCall(REVIEWS_DELAY) {
             val authors = listOf(
                 "Aiko", "Haruto", "Mei", "Sota", "Yui", "Ren",
                 "Hana", "Kaito", "Sakura", "Riku",
@@ -94,7 +99,7 @@ class TheaterRepository {
     }
 
     suspend fun buyTicket(performance: Performance, seat: Seat): Ticket {
-        return networkCall(700) {
+        return networkCall(PURCHASE_DELAY) {
             Ticket(
                 performanceTitle = performance.title,
                 row = seat.row,
@@ -112,8 +117,25 @@ class TheaterRepository {
     }
 
     companion object {
+        // Fake network delays, long enough for a loader to be visible.
+        const val PLAYBILL_DELAY = 1_500L
+        const val DETAILS_DELAY = 800L
+        const val SEATS_DELAY = 600L
+        const val REVIEWS_DELAY = 500L
+        const val PURCHASE_DELAY = 700L
+
         const val ROWS = 10
         const val SEATS_PER_ROW = 8
+
+        // Scatters taken seats over the hall without a random: a test needs the
+        // same hall every run.
+        private const val ROW_SPREAD = 31
+        private const val SEAT_SPREAD = 7
+        private const val EVERY_FOURTH = 4
+
+        fun isTaken(row: Int, number: Int): Boolean {
+            return (row * ROW_SPREAD + number * SEAT_SPREAD) % EVERY_FOURTH == 0
+        }
         const val REVIEWS_COUNT = 30
     }
 }

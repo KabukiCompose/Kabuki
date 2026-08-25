@@ -37,6 +37,9 @@ import kabuki.semantics.testTag
 /** Star rating color - fixed (not theme-based) so tests can assert it exactly. */
 val RatingGold = Color(0xFFC9A227)
 
+/** Stars in the rating widget. */
+private const val MAX_RATING = 5
+
 enum class ReviewTags {
     DIALOG,
     CLOSE_BUTTON,
@@ -113,8 +116,8 @@ fun ReviewsDialog(
 
 @Composable
 private fun ReviewCard(
-    modifier: Modifier = Modifier,
     review: Review,
+    modifier: Modifier = Modifier,
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -128,7 +131,7 @@ private fun ReviewCard(
                     modifier = Modifier.testTag(ReviewTags.ITEM_AUTHOR),
                 )
                 Text(
-                    text = "★".repeat(review.rating) + "☆".repeat(5 - review.rating),
+                    text = "★".repeat(review.rating) + "☆".repeat(MAX_RATING - review.rating),
                     style = MaterialTheme.typography.titleSmall,
                     color = RatingGold,
                     modifier = Modifier.testTag(ReviewTags.ITEM_RATING),

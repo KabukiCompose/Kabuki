@@ -33,8 +33,8 @@ enum class TicketsTags {
 }
 
 @Composable
-fun TicketsScreen(state: TheaterState) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp).testTag(TicketsTags.SCREEN)) {
+fun TicketsScreen(state: TheaterState, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxSize().padding(16.dp).testTag(TicketsTags.SCREEN)) {
         Text(text = "My tickets", style = MaterialTheme.typography.headlineMedium)
 
         if (state.tickets.isEmpty()) {

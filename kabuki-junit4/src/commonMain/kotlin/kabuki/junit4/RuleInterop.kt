@@ -37,7 +37,7 @@ public fun ComposeTestRule.asKabukiContext(): KabukiComposeContext {
         }
 
         override fun setContent(content: @Composable () -> Unit) {
-            val contentRule = rule as? ComposeContentTestRule ?: throw IllegalStateException(
+            val contentRule = rule as? ComposeContentTestRule ?: error(
                 "This ComposeTestRule does not accept content - it is managed by the host " +
                     "(e.g. createAndroidComposeRule<YourActivity>() already shows your app). " +
                     "Drive the existing UI instead of calling setContent.",

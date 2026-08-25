@@ -65,6 +65,7 @@ fun PlaybillScreen(
     state: TheaterState,
     columns: Int,
     onOpenPerformance: (Performance) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var performances by remember { mutableStateOf<List<Performance>?>(null) }
     LaunchedEffect(Unit) {
@@ -73,7 +74,7 @@ fun PlaybillScreen(
 
     var genreFilter by remember { mutableStateOf<Genre?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp).testTag(PlaybillTags.SCREEN)) {
+    Column(modifier = modifier.fillMaxSize().padding(16.dp).testTag(PlaybillTags.SCREEN)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -82,7 +83,7 @@ fun PlaybillScreen(
             Text(text = "Playbill", style = MaterialTheme.typography.headlineMedium)
             GenreFilterDropdown(
                 selected = genreFilter,
-                onSelected = { genreFilter = it },
+                onSelect = { genreFilter = it },
             )
         }
 
@@ -131,7 +132,7 @@ fun PlaybillScreen(
 @Composable
 private fun GenreFilterDropdown(
     selected: Genre?,
-    onSelected: (Genre?) -> Unit,
+    onSelect: (Genre?) -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
 
@@ -146,7 +147,7 @@ private fun GenreFilterDropdown(
             DropdownMenuItem(
                 text = { Text("All genres") },
                 onClick = {
-                    onSelected(null)
+                    onSelect(null)
                     menuOpen = false
                 },
                 modifier = Modifier.testTag(PlaybillTags.GENRE_OPTION, "ALL"),
@@ -155,7 +156,7 @@ private fun GenreFilterDropdown(
                 DropdownMenuItem(
                     text = { Text(genre.displayName) },
                     onClick = {
-                        onSelected(genre)
+                        onSelect(genre)
                         menuOpen = false
                     },
                     modifier = Modifier.testTag(PlaybillTags.GENRE_OPTION, genre.name),
@@ -167,9 +168,9 @@ private fun GenreFilterDropdown(
 
 @Composable
 private fun PerformanceCard(
-    modifier: Modifier = Modifier,
     performance: Performance,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Card(
         onClick = onClick,

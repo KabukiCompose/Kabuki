@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.binaryCompatibilityValidator)
+    alias(libs.plugins.detekt) apply false
 }
 
 // Read here: the `libs` accessor is not available inside allprojects { }.
@@ -19,6 +20,23 @@ val jvmTargetVersion = libs.versions.jvmTarget.get()
 val kotlinLanguageVersion = KotlinVersion.fromVersion(libs.versions.kotlinLanguage.get())
 val kotlinCoreLibrariesVersion = libs.versions.kotlinCoreLibraries.get()
 val repoUrl = "https://github.com/KabukiCompose/Kabuki"
+
+subprojects {
+    apply(plugin = "dev.detekt")
+
+    // Reports without blocking, until the rule set is tuned: out of the box detekt
+    // flags @Composable naming and our deliberate broad catches, and a build that
+    // is red for reasons everybody ignores teaches people to ignore it.
+    extensions.configure<dev.detekt.gradle.extensions.DetektExtension> {
+        config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+        buildUponDefaultConfig = true
+    }
+
+    // Compose has its own ways to get things wrong - modifier order, state
+    // hoisting, a composable that returns a value - and detekt knows none of them
+    // by itself.
+    dependencies.add("detektPlugins", rootProject.libs.composeRules.detekt)
+}
 
 allprojects {
     // Namespace verified through the KabukiCompose GitHub org - no domain needed.

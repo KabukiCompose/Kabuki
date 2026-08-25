@@ -119,7 +119,8 @@ private fun KabukiTestScope.retryUntilSuccess(
             }
         }
     } catch (e: ComposeTimeoutException) {
-        // The slow way to the same verdict: the whole timeout, still nothing composed.
+        // Compose's timeout says nothing a reader needs - the real cause is in
+        // lastError and goes into the message below.
         emptySceneErrorOrNull(lastError)?.let { fatal -> throw fatal }
         throw withTreeDump(onTimeout(lastError, timeout))
     }

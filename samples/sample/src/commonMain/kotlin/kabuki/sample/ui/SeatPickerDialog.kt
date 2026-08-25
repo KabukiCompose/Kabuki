@@ -65,7 +65,7 @@ fun SeatPickerDialog(
     performance: Performance,
     repository: TheaterRepository,
     onDismiss: () -> Unit,
-    onBought: (Ticket) -> Unit,
+    onBuy: (Ticket) -> Unit,
 ) {
     var seats by remember { mutableStateOf<List<Seat>?>(null) }
     LaunchedEffect(performance.id) {
@@ -167,7 +167,7 @@ fun SeatPickerDialog(
                             val ticket = repository.buyTicket(performance, seatToBuy)
                             buying = false
                             pendingSeat = null
-                            onBought(ticket)
+                            onBuy(ticket)
                         }
                     },
                     enabled = !buying,

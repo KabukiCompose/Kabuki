@@ -52,6 +52,12 @@ import kabuki.semantics.TintColorKey
 import kabuki.treeFor
 import kotlin.time.Duration
 
+/** Enough lookalike tags to show the pattern without burying the failure message. */
+private const val MAX_LOOKALIKE_TAGS = 5
+
+/** Up to this length an enum name is assumed to be R8's work, not a person's. */
+private const val MINIFIED_NAME_LENGTH = 3
+
 /**
  * Semantics node wrapper: a matcher plus operations, each retried until the timeout.
  *
@@ -68,12 +74,6 @@ import kotlin.time.Duration
  * for its container at operation time - so a component's root may be declared after
  * the nodes it scopes.
  */
-/** Enough lookalike tags to show the pattern without burying the failure message. */
-private const val MAX_LOOKALIKE_TAGS = 5
-
-/** Up to this length an enum name is assumed to be R8's work, not a person's. */
-private const val MINIFIED_NAME_LENGTH = 3
-
 @OptIn(ExperimentalTestApi::class)
 public class UiNode(
     private val scopeProvider: () -> KabukiTestScope,
@@ -457,6 +457,7 @@ public class UiNode(
                 block()
                 true
             } catch (e: AssertionError) {
+                // Swallowing IS the contract here: a probe answers instead of failing.
                 false
             }
         }
@@ -514,7 +515,7 @@ public class UiNode(
                         appendLine("Node $description does not have the expected $colorName within $timeoutUsed.")
                         appendLine("Expected: $expected")
                         append(
-                            "Actual: ${actual ?: "<not published - add the matching kabuki-semantics modifier in production code>"}",
+                            "Actual: " + (actual ?: "<not published - add the kabuki-semantics modifier>"),
                         )
                     },
                     cause = cause,
@@ -646,13 +647,13 @@ public class UiNode(
     }
 
     private fun findDescendantWithText(node: SemanticsNode, expected: String): SemanticsNode? {
-        for (child in node.children) {
+        return node.children.firstNotNullOfOrNull { child ->
             if (child.textOrNull()?.contains(expected) == true) {
-                return child
+                child
+            } else {
+                findDescendantWithText(child, expected)
             }
-            findDescendantWithText(child, expected)?.let { found -> return found }
         }
-        return null
     }
 
     /**
@@ -749,7 +750,7 @@ public class UiNode(
         if (scope.config.isMuted) {
             return ""
         }
-        return (sameTagHint() ?: "") + (lookalikeTagHint() ?: "")
+        return sameTagHint().orEmpty() + lookalikeTagHint().orEmpty()
     }
 
     private fun interaction(): SemanticsNodeInteraction {
@@ -823,7 +824,7 @@ public class UiNode(
             KabukiAssertionError(
                 message = "Operation '${named(operation)}' on node $description failed within $timeoutUsed." +
                     "\n${treeHint()}" +
-                    (cause?.let { "\nLast error: ${it.message}" } ?: "") +
+                    cause?.let { "\nLast error: ${it.message}" }.orEmpty() +
                     tagHints(),
                 cause = cause,
             )
