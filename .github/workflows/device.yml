@@ -10,10 +10,22 @@ on:
   # be visible without anyone remembering to look.
   push:
     branches: [main]
+  # And on a pull request that changes THIS file. GitHub offers "Run workflow"
+  # only for workflows that exist on the default branch, so a new or edited
+  # emulator matrix is otherwise untestable until after it lands.
+  pull_request:
+    paths:
+      - .github/workflows/device.yml
 
 permissions: {}
 
 concurrency:
+  # By ref, so a new push to a branch kills the run of the commit it just
+  # replaced - four emulators for twenty minutes each is the most expensive thing
+  # to leave running for nothing. Keying by commit would lose exactly that.
+  # Known and accepted: a manual run and the pull-request run of the SAME commit
+  # get different refs and both proceed. That only happens if someone starts by
+  # hand a run that already started itself, and the second result wins.
   group: device-${{ github.ref }}
   cancel-in-progress: true
 

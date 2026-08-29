@@ -1,0 +1,43 @@
+version: 2
+
+updates:
+  # Actions are pinned by full SHA here, and Dependabot understands that: it
+  # bumps the SHA and rewrites the version comment beside it.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # The version catalog. Grouped on purpose - a Kotlin bump is never alone, the
+  # compiler, the Compose plugin and AGP move together and have to be reviewed
+  # as one change.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      gradle:
+        patterns: ["*"]
+
+  # consumer-check is a separate Gradle build, invisible to the entry above.
+  - package-ecosystem: gradle
+    directory: /consumer-check
+    schedule:
+      interval: monthly
+    groups:
+      consumer:
+        patterns: ["*"]
+    ignore:
+      # The one thing Dependabot could raise here is the Kotlin plugin version,
+      # and it must not: this build is deliberately on the OLDEST Kotlin we
+      # support, which is the whole check. Names are groupId:artifactId, and a
+      # Gradle plugin appears under its marker coordinates - hence two patterns.
+      - dependency-name: org.jetbrains.kotlin:*
+      - dependency-name: org.jetbrains.kotlin.jvm:*
+      # Kabuki itself comes from mavenLocal, published by the job right before.
+      # There is no registry version to find, and there should not be - the
+      # point is to check the build we just made.
+      - dependency-name: io.github.kabukicompose:*

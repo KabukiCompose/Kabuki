@@ -1,0 +1,14 @@
+# Ownership here is about review, not permission: GitHub asks these owners to
+# look at a pull request that touches the paths below.
+
+# Workflows run with this repository's tokens - the most valuable thing an
+# outside pull request can change.
+/.github/ @ArtyomZhukov
+
+# Everything the build EXECUTES before anyone reads a line of it: the wrapper jar
+# and the version catalog, where a plugin version is a decision to run someone
+# else's code on our runner. Build scripts are deliberately not here - they change
+# in every other pull request, and a rule that fires always stops being a signal.
+/gradle/ @ArtyomZhukov
+/gradlew @ArtyomZhukov
+/gradlew.bat @ArtyomZhukov
