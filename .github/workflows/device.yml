@@ -1,0 +1,100 @@
+name: device
+
+# Instrumented tests on real emulators - the slowest thing we run, so it starts
+# BY HAND: run it once the branch is ready, fix what the four cells report in one
+# go, merge. Skipping it stops being possible once device-ok is required in
+# branch protection: a check that never ran keeps the merge button grey.
+on:
+  workflow_dispatch:
+  # On main it runs by itself: nobody is waiting there, and a broken merge should
+  # be visible without anyone remembering to look.
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: device-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  instrumented:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      # A red cell must not hide the others - the point is WHICH device disagrees.
+      fail-fast: false
+      matrix:
+        # Both axes broke us, independently: old and new API failed for
+        # different reasons (it was 25 and 36; we test 24 as the minSdk floor),
+        # and a wide screen hung the run because the app did not fit. Hence the
+        # full 2x2 - the pair that hurt was old API AND wide screen.
+        api: [24, 36]
+        device:
+          - profile: Nexus 5X
+            label: phone-portrait
+          - profile: pixel_c
+            label: tablet-landscape
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Only a maintainer can start this today, so the wrapper is ours by
+      # construction. Checked anyway, for the day this grows an outside trigger.
+      - name: Validate the Gradle wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      # Without it the emulator is slow enough to time tests out instead of
+      # failing them, which reads as a Kabuki bug.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Instrumented tests
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          profile: ${{ matrix.device.profile }}
+          arch: x86_64
+          # Animations fight the test runner; the rest is a headless emulator.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: ./gradlew :kabuki-runner:connectedDebugAndroidTest :samples:sample:connectedDebugAndroidTest --stacktrace
+
+      - name: Keep the reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: device-reports-api${{ matrix.api }}-${{ matrix.device.label }}
+          path: |
+            build/*/reports/androidTests/**
+            build/*/outputs/androidTest-results/**
+          retention-days: 7
+
+  # One name for the whole matrix. Branch protection wants a check by NAME, and
+  # matrix cells are named after their values - add an axis and the required
+  # check silently stops existing. This job never changes its name.
+  device-ok:
+    needs: instrumented
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every device agreed
+        run: |
+          echo "result: ${{ needs.instrumented.result }}"
+          test "${{ needs.instrumented.result }}" = "success"

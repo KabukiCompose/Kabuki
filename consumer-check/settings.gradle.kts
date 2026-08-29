@@ -9,3 +9,7 @@ dependencyResolutionManagement {
         google()
     }
 }
+
+// A second consumer, of the shape most people actually use: a Kotlin
+// Multiplatform project that declares Kabuki in commonTest.
+include(":kmp-consumer")

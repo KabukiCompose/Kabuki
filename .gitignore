@@ -1,9 +1,7 @@
 .gradle/
-# The root build only: every module writes into it (layout.buildDirectory in the
-# root build script), so one line covers them all.
-/build/
-# consumer-check is a separate Gradle build and keeps its output to itself.
-consumer-check/build/
+# Any level. Modules write into the root build/ (layout.buildDirectory in the
+# root script), but the ignore must not depend on that line staying there.
+build/
 .idea/
 .kotlin/
 *.iml
