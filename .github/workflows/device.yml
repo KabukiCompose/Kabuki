@@ -33,9 +33,10 @@ env:
   # Pinned like every action here; the archive comes from the project's own
   # GitHub releases over https.
   MARATHON_VERSION: "0.10.5"
-  # Must match the length of the shard axis below - Marathon needs to know how
-  # many pieces the suite was cut into.
-  SHARD_COUNT: "4"
+  # Must match the length of the shard axis below. Three, not four: measured
+  # 2026-08-30, four shards finished no faster (9m16s vs 9m22s) because the extra
+  # cells start late - the runner pool hands them out in waves.
+  SHARD_COUNT: "3"
 
 jobs:
   # Build once, test in every cell. This job never sees an emulator, and the
@@ -113,7 +114,7 @@ jobs:
             label: tablet-landscape
         # Last axis on purpose: it varies fastest, so all shards of one device
         # sit next to each other in the run list instead of being scattered.
-        shard: [0, 1, 2, 3]
+        shard: [0, 1, 2]
     steps:
       # For the Marathonfile only - nothing here is compiled.
       - name: Check out
