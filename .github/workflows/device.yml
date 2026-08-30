@@ -33,7 +33,6 @@ env:
   # Pinned like every action here; the archive comes from the project's own
   # GitHub releases over https.
   MARATHON_VERSION: "0.10.5"
-  SHARD_COUNT: "3"
 
 jobs:
   # Build once, test in every cell. This job never sees an emulator, and the
@@ -93,25 +92,34 @@ jobs:
 
   instrumented:
     needs: apks
+    # Spelled out, or the cell would be named after every matrix key at once.
+    name: api ${{ matrix.api }}, ${{ matrix.label }}, shard ${{ matrix.shard }}/${{ matrix.shards }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       # A red cell must not hide the others - the point is WHICH device disagrees.
       fail-fast: false
+      # Every cell spelled out instead of multiplying axes, because the number of
+      # shards is NOT the same for every device: a configuration takes as many
+      # pieces as it needs to finish alongside the others. Both device axes broke
+      # us independently - old and new API for different reasons, and a wide
+      # screen because the app did not fit - so all four combinations stay.
       matrix:
-        # Both axes broke us, independently: old and new API failed for
-        # different reasons (it was 25 and 36; we test 24 as the minSdk floor),
-        # and a wide screen hung the run because the app did not fit. Hence both
-        # axes in full - the pair that hurt was old API AND wide screen.
-        api: [24, 36]
-        device:
-          - profile: Nexus 5X
-            label: phone-portrait
-          - profile: pixel_c
-            label: tablet-landscape
-        # Last axis on purpose: it varies fastest, so all shards of one device
-        # sit next to each other in the run list instead of being scattered.
-        shard: [0, 1, 2]
+        include:
+          # The slowest one: new API on a 2560x1800 screen, four pieces.
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 4 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 4 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 4 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 3, shards: 4 }
+          - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 3 }
+          - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 3 }
+          - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 3 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 3 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 3 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 2, shards: 3 }
+          # The fastest one: it only needs halves.
+          - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 2 }
+          - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 2 }
     steps:
       # For the Marathonfile only - nothing here is compiled.
       - name: Check out
@@ -155,10 +163,10 @@ jobs:
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         env:
           MARATHON_FRAGMENT_INDEX: ${{ matrix.shard }}
-          MARATHON_FRAGMENT_COUNT: ${{ env.SHARD_COUNT }}
+          MARATHON_FRAGMENT_COUNT: ${{ matrix.shards }}
         with:
           api-level: ${{ matrix.api }}
-          profile: ${{ matrix.device.profile }}
+          profile: ${{ matrix.profile }}
           arch: x86_64
           # Animations fight the test runner; the rest is a headless emulator.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
@@ -172,7 +180,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: device-reports-api${{ matrix.api }}-${{ matrix.device.label }}-shard${{ matrix.shard }}
+          name: device-reports-api${{ matrix.api }}-${{ matrix.label }}-shard${{ matrix.shard }}
           path: marathon-report/**
           retention-days: 7
 
