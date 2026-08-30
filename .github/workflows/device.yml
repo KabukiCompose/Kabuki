@@ -174,8 +174,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       # A cold emulator boot costs about a minute and a half in every cell. Cached
-      # per configuration - Nexus 5X and pixel_c are different AVDs. The v1 in the
-      # key is ours to bump when the AVD layout changes under us.
+      # per configuration - Nexus 5X and pixel_c are different AVDs. The version
+      # in the key is ours to bump whenever a stored snapshot stops being good:
+      # a bad one is otherwise restored forever.
       - name: Restore the emulator snapshot
         id: avd-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -183,7 +184,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-v1-${{ matrix.api }}-${{ matrix.label }}
+          key: avd-v2-${{ matrix.api }}-${{ matrix.label }}
 
       # ONE cell per configuration builds the snapshot, and the same one saves it.
       # Every shard shares the key, so they all miss together - letting each of
@@ -199,7 +200,15 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
-          script: echo "Snapshot saved for the cache."
+          # A snapshot freezes the system exactly as it is. Taken the moment the
+          # boot flag flips, it stores a machine still starting its services: on
+          # restore the first adb command lands on that machine and is killed,
+          # and the cell dies before Marathon starts. Let it settle first, then
+          # do the wake-up the action itself does after every boot - if that one
+          # cannot survive here, it will not survive a restore either.
+          script: |
+            sleep 60
+            adb shell input keyevent 82
 
       - name: Keep the snapshot for the next run
         if: steps.avd-cache.outputs.cache-hit != 'true' && matrix.shard == 0
@@ -208,7 +217,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-v1-${{ matrix.api }}-${{ matrix.label }}
+          key: avd-v2-${{ matrix.api }}-${{ matrix.label }}
 
       # Marathon finds the SDK through ANDROID_HOME, which the runner image sets.
       # If it ever stops doing that, the failure is loud and precise:
