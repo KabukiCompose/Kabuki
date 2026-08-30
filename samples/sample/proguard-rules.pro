@@ -16,5 +16,5 @@
 -keep class kotlin.enums.** { *; }
 
 # No keep rule gets a fully green run here: the cascade of inlined and dropped
-# Compose/Kotlin members has no end. What this variant is
-# good for is building the app and reading mapping.txt.
+# Compose/Kotlin members has no end. What this variant is good for is building
+# the app and reading mapping.txt.

@@ -11,6 +11,17 @@ updates:
       actions:
         patterns: ["*"]
 
+  # Composite actions live outside the workflows directory, and the entry above
+  # does not reach them - it covers .github/workflows and a root action.yml only.
+  # Without this the action pinned inside ours would never be bumped.
+  - package-ecosystem: github-actions
+    directory: /.github/actions/instrumented-tests
+    schedule:
+      interval: monthly
+    groups:
+      composite-actions:
+        patterns: ["*"]
+
   # The version catalog. Grouped on purpose - a Kotlin bump is never alone, the
   # compiler, the Compose plugin and AGP move together and have to be reviewed
   # as one change.

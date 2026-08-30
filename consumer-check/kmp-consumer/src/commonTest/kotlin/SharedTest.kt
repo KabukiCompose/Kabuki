@@ -29,6 +29,12 @@ private fun sharedTestCompiles(): () -> Unit {
             onScreen<KmpScreen> {
                 items.assertLengthEquals(2)
                 root.assertIsDisplayed()
+                // Every inline function with a reified type parameter is called
+                // here on purpose: apiCheck cannot see them, so compiling against
+                // the published metadata is the only thing that can.
+                items.firstItem<KmpItem>()
+                items.itemAt<KmpItem>(1) { title.assertIsDisplayed() }
+                items.itemWhere<KmpItem>({ withText("Kabuki") }) { title.assertIsDisplayed() }
             }
         }
     }

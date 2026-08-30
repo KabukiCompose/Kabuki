@@ -77,10 +77,13 @@ Do NOT remove the old framework until the last batch is green.
 - `kabuki.page` - what a page object is built from: `Screen`, `Component`,
   `UiNode`, `LazyList`, `ListItem`, `onScreen`;
 - `kabuki.listener` - reporting SPI: `KabukiListener`, `ConsoleListener`, event
-  and result types.
+  and result types;
+- `kabuki.runner` - what starts a test: `runKabukiTest`, `KabukiTestCase`;
+- `kabuki.semantics` - the only package production code touches: `testTag`,
+  `testListItem`, `testListLength`.
 
-So a migrated page object imports `kabuki.page.Screen`, and the test imports
-`kabuki.page.onScreen`.
+So a migrated page object imports `kabuki.page.Screen`, the test imports
+`kabuki.page.onScreen`, and its base class comes from `kabuki.runner`.
 
 ## Step 2: API mapping tables
 

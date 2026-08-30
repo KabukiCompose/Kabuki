@@ -44,11 +44,9 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
-      # gradle-wrapper.jar is a binary this workflow runs sight unseen; a swapped
-      # one in a pull request would be remote code execution on our runner.
-      - name: Validate the Gradle wrapper
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-
+      # It validates gradle-wrapper.jar on the way in, and every job here that
+      # runs Gradle goes through it: a swapped jar in a pull request would be
+      # code execution on the runner, and nothing else looks at that binary.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 

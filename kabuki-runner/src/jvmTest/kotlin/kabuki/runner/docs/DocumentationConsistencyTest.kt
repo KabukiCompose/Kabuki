@@ -126,7 +126,11 @@ class DocumentationConsistencyTest {
     fun everyKabukiPackageMentionedInTheSkillExists() {
         val skill = skillFile()
         assumeTrue("The migration skill is not part of this checkout", skill.isFile)
-        val sources = repoRoot.resolve("kabuki-core/src/commonMain/kotlin")
+        // Every published module, not just the core one: a reader needs
+        // kabuki.runner as much as kabuki.page, and looking in one module only
+        // made the skill unable to name the rest without failing here.
+        val sources = listOf("kabuki-core", "kabuki-runner", "kabuki-semantics", "kabuki-junit4")
+            .map { module -> repoRoot.resolve("$module/src/commonMain/kotlin") }
         val mentioned = PACKAGE.findAll(skill.readText())
             .map { match -> match.groupValues[1] }
             .distinct()
@@ -134,7 +138,9 @@ class DocumentationConsistencyTest {
 
         assertTrue(mentioned.isNotEmpty(), "No kabuki.* packages found in the skill - format changed?")
 
-        val missing = mentioned.filterNot { pkg -> sources.resolve(pkg.replace('.', '/')).isDirectory }
+        val missing = mentioned.filterNot { pkg ->
+            sources.any { root -> root.resolve(pkg.replace('.', '/')).isDirectory }
+        }
         assertTrue(
             missing.isEmpty(),
             "The migration skill imports from packages that do not exist: $missing",
