@@ -2,7 +2,7 @@ plugins {
     // The oldest Kotlin Kabuki claims to support. Our artifacts are built with a
     // newer compiler but carry metadata 2.2 and stdlib 2.2 - forget
     // coreLibrariesVersion at home and half the users cannot read us.
-    kotlin("jvm") version "2.2.0"
+    kotlin("jvm") version "2.4.10"
 }
 
 dependencies {
