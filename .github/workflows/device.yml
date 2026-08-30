@@ -35,7 +35,7 @@ env:
   MARATHON_VERSION: "0.10.5"
   # Must match the length of the shard axis below - Marathon needs to know how
   # many pieces the suite was cut into.
-  SHARD_COUNT: "2"
+  SHARD_COUNT: "4"
 
 jobs:
   # Build once, test in every cell. This job never sees an emulator, and the
@@ -111,9 +111,9 @@ jobs:
             label: phone-portrait
           - profile: pixel_c
             label: tablet-landscape
-        # Last axis on purpose: it varies fastest, so both shards of one device
+        # Last axis on purpose: it varies fastest, so all shards of one device
         # sit next to each other in the run list instead of being scattered.
-        shard: [0, 1]
+        shard: [0, 1, 2, 3]
     steps:
       # For the Marathonfile only - nothing here is compiled.
       - name: Check out
