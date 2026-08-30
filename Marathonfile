@@ -34,9 +34,9 @@ vendorConfiguration:
     install: "PT3M"
 
   # Video recording is ON by default and it is expensive: the recorder runs for
-  # every batch, and on a 2560x1800 tablet it starved the emulator until adb
-  # stopped answering and the cell hung. We capture nothing - a failure is read
-  # from the message and the semantics dump, not from a film.
+  # every batch, and on a large screen it starves the emulator until adb stops
+  # answering. We capture nothing - a failure is read from the message and the
+  # semantics dump, not from a film.
   screenRecordConfiguration:
     preferableRecorderType: "screenshot"
     videoConfiguration:

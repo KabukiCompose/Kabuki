@@ -197,8 +197,9 @@ jobs:
           ./gradlew :kabuki-runner:jvmTest --tests "*VisibleWindowSelfTest*"
           -Pkabuki.window --stacktrace
 
-  # The workflows themselves are code, and the ways they go wrong - injections,
-  # over-broad permissions, unpinned actions - have their own linter.
+  # The workflows and the actions they call are code too, and the ways they go
+  # wrong - injections, over-broad permissions, unpinned actions - have their own
+  # linter.
   workflows:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -211,7 +212,7 @@ jobs:
       # Pinned like the actions above: an unpinned linter turns its next release
       # into a red build on a commit that changed nothing.
       - name: Lint the workflows
-        run: pipx run zizmor==1.29.0 --persona=regular .github/workflows/
+        run: pipx run zizmor==1.29.0 --persona=regular .github/workflows/ .github/actions/
 
   # One stable name to require in branch protection, instead of five that change
   # whenever a matrix does.

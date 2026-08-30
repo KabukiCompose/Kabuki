@@ -17,6 +17,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/device.yml
+      - .github/actions/instrumented-tests/action.yml
       - Marathonfile
 
 permissions: {}
@@ -106,7 +107,7 @@ jobs:
       # screen because the app did not fit - so all four combinations stay.
       matrix:
         include:
-          # The slowest one: new API on a 2560x1800 screen, six pieces.
+          # The slowest one: new API on a 2560x1800 screen.
           - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 6 }
           - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 6 }
           - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 6 }
@@ -122,7 +123,7 @@ jobs:
           - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 4 }
           - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 4 }
           - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 3, shards: 4 }
-          # The fastest one: it only needs halves.
+          # The fastest one.
           - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 2 }
           - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 2 }
     steps:
@@ -159,8 +160,13 @@ jobs:
           if [ ! -x "${bin}/marathon" ]; then
             base=https://github.com/MarathonLabs/marathon/releases/download
             url="${base}/${MARATHON_VERSION}/marathon-${MARATHON_VERSION}.zip"
-            curl -fsSL -o /tmp/marathon.zip "${url}"
-            unzip -q /tmp/marathon.zip -d "${HOME}"
+            curl --retry 3 --retry-delay 5 -fsSL -o /tmp/marathon.zip "${url}"
+            # Whatever lands here is cached as it stands, so half an archive
+            # would break every later run. Better to leave nothing behind.
+            if ! unzip -q /tmp/marathon.zip -d "${HOME}"; then
+              rm -rf "${HOME}/marathon-${MARATHON_VERSION}"
+              exit 1
+            fi
           fi
           echo "${bin}" >> "${GITHUB_PATH}"
 
@@ -173,10 +179,51 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # A cold emulator boot costs about a minute and a half in every cell. Cached
-      # per configuration - Nexus 5X and pixel_c are different AVDs. The version
-      # in the key is ours to bump whenever a stored snapshot stops being good:
-      # a bad one is otherwise restored forever.
+      # The emulator action downloads these with no retry of its own: one archive
+      # that arrives corrupted kills the cell. Fetching them first leaves it only
+      # the build tools, whose version is a constant inside it - copying that
+      # constant here would go stale in silence. The arch and the target spelled
+      # out below must match the emulator steps, or this warms up the wrong image.
+      - name: Warm up the SDK
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          API: ${{ matrix.api }}
+        run: |
+          sdk="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "${sdk}" ]; then
+            echo "::warning::No sdkmanager on the image; the action installs the tools itself."
+            exit 0
+          fi
+          packages=("platform-tools" "emulator" "platforms;android-${API}")
+          packages+=("system-images;android-${API};default;x86_64")
+          for attempt in 1 2 3; do
+            # sdkmanager calls a corrupted archive a Warning, so its exit code
+            # is not something to lean on: what landed on disk decides. A package
+            # lives in the directory its own name spells, semicolons as slashes.
+            "${sdk}" --install "${packages[@]}" < <(yes) > /dev/null || true
+            missing=""
+            for package in "${packages[@]}"; do
+              if [ ! -d "${ANDROID_HOME}/${package//;//}" ]; then
+                missing="${missing} ${package}"
+              fi
+            done
+            if [ -z "${missing}" ]; then
+              exit 0
+            fi
+            echo "Attempt ${attempt} left these behind:${missing}"
+            rm -rf "${ANDROID_HOME}/.temp"
+            if [ "${attempt}" -ne 3 ]; then sleep 15; fi
+          done
+          # A warm-up is an optimisation: it warns and steps aside rather than
+          # taking the cell down before the action has had its own try.
+          echo "::warning::SDK warm-up failed; the action will try on its own."
+
+      # A restored snapshot skips the cold boot - worth a lot on the newest API
+      # level, next to nothing on the oldest, which boots quickly anyway. Cached
+      # per configuration: Nexus 5X and pixel_c are different AVDs. The version in
+      # the key is ours to bump whenever a stored snapshot stops being good - a
+      # bad one is otherwise restored forever.
       - name: Restore the emulator snapshot
         id: avd-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -190,8 +237,12 @@ jobs:
       # Every shard shares the key, so they all miss together - letting each of
       # them boot an emulator just to store it would burn the gain on the very run
       # that pays for it, and the cache would go to whoever finished first.
+      # Failing here is not fatal: the snapshot is an optimisation, and a cell
+      # without one just boots cold. Whoever runs next takes another shot at it.
       - name: Create the snapshot
+        id: snapshot
         if: steps.avd-cache.outputs.cache-hit != 'true' && matrix.shard == 0
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: ${{ matrix.api }}
@@ -210,8 +261,18 @@ jobs:
             sleep 60
             adb shell input keyevent 82
 
+      # A creation that died halfway can leave an AVD holding a half-written
+      # snapshot, and every attempt below would restore that same wreck - the
+      # retry included, since it reuses whatever AVD it finds.
+      - name: Drop a half-made AVD
+        if: steps.snapshot.outcome == 'failure'
+        run: rm -rf "${HOME}/.android/avd"
+
+      # A skipped or failed creation leaves nothing worth storing, and both show
+      # up here as an outcome other than success.
       - name: Keep the snapshot for the next run
-        if: steps.avd-cache.outputs.cache-hit != 'true' && matrix.shard == 0
+        if: steps.snapshot.outcome == 'success'
+        continue-on-error: true
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -219,27 +280,50 @@ jobs:
             ~/.android/adb*
           key: avd-v2-${{ matrix.api }}-${{ matrix.label }}
 
-      # Marathon finds the SDK through ANDROID_HOME, which the runner image sets.
-      # If it ever stops doing that, the failure is loud and precise:
-      # "No android SDK path specified".
+      # Everything this step does before Marathon belongs to somebody else: an SDK
+      # package that arrives corrupted, an emulator that will not boot, adb
+      # losing the device. Such a failure says nothing about Kabuki.
       - name: Instrumented tests
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
-        env:
-          MARATHON_FRAGMENT_INDEX: ${{ matrix.shard }}
-          MARATHON_FRAGMENT_COUNT: ${{ matrix.shards }}
+        id: tests
+        continue-on-error: true
+        uses: ./.github/actions/instrumented-tests
         with:
-          api-level: ${{ matrix.api }}
+          api: ${{ matrix.api }}
           profile: ${{ matrix.profile }}
-          arch: x86_64
-          # Reuse the cached AVD and its snapshot, and do not write a new one.
-          force-avd-creation: false
-          # Animations fight the test runner; the rest is a headless emulator.
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          # Both flags are ON by default and are NOT settable from the
-          # Marathonfile: without them every run reports analytics and crashes
-          # to third parties.
-          script: marathon --analyticsTracking=false --bugsnag=false -m Marathonfile
+          shard: ${{ matrix.shard }}
+          shards: ${{ matrix.shards }}
+
+      # Marathon writes its report as it goes, so a report holding no files at
+      # all proves the tests never ran and the failure was not ours. A FAILING
+      # TEST always leaves a report and is never retried: in a testing library
+      # our own flake is the one thing we must see. The verdict is reached here,
+      # once, and announced - a retry that becomes routine would otherwise hide
+      # behind a green check with nothing but a longer run to show for it.
+      - name: Judge the failure
+        id: verdict
+        if: steps.tests.outcome == 'failure'
+        run: |
+          if find marathon-report -type f 2>/dev/null | grep -q .; then
+            echo "Marathon left a report; the suite itself is red."
+          else
+            echo "::warning::Marathon never ran; taking one more attempt."
+            echo "retry=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Instrumented tests, second attempt
+        if: steps.verdict.outputs.retry == 'true'
+        uses: ./.github/actions/instrumented-tests
+        with:
+          api: ${{ matrix.api }}
+          profile: ${{ matrix.profile }}
+          shard: ${{ matrix.shard }}
+          shards: ${{ matrix.shards }}
+
+      # Without this the cell would go green on a red suite: continue-on-error
+      # above swallows the failure, and the retry deliberately skips this case.
+      - name: Fail on a test failure
+        if: steps.tests.outcome == 'failure' && steps.verdict.outputs.retry != 'true'
+        run: exit 1
 
       - name: Keep the reports of a failed run
         if: failure()

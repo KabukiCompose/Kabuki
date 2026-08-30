@@ -1,0 +1,46 @@
+name: Instrumented tests
+description: Boots an emulator and runs one Marathon fragment on it.
+
+# Its own file because device.yml calls it twice - once, and once more when the
+# first attempt died before Marathon started. Two copies of an emulator setup
+# drift apart silently, and the copy that drifts is the one nobody reads.
+# Not self-contained: the caller has already put Marathon on the PATH and the
+# APKs where the Marathonfile expects them.
+
+inputs:
+  api:
+    description: API level of the emulator.
+    required: true
+  profile:
+    description: Hardware profile of the AVD.
+    required: true
+  shard:
+    description: Index of the fragment this cell runs.
+    required: true
+  shards:
+    description: Number of fragments the suite is split into.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Marathon finds the SDK through ANDROID_HOME, which the runner image sets.
+    # If it ever stops doing that, the failure is loud and precise:
+    # "No android SDK path specified".
+    - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+      env:
+        MARATHON_FRAGMENT_INDEX: ${{ inputs.shard }}
+        MARATHON_FRAGMENT_COUNT: ${{ inputs.shards }}
+      with:
+        api-level: ${{ inputs.api }}
+        profile: ${{ inputs.profile }}
+        arch: x86_64
+        # Reuse the cached AVD and its snapshot, and do not write a new one.
+        force-avd-creation: false
+        # Animations fight the test runner; the rest is a headless emulator.
+        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: true
+        # Both flags are ON by default and are NOT settable from the
+        # Marathonfile: without them every run reports analytics and crashes
+        # to third parties.
+        script: marathon --analyticsTracking=false --bugsnag=false -m Marathonfile
