@@ -20,9 +20,8 @@ private val watchdogScope = CoroutineScope(Dispatchers.Default + SupervisorJob()
  * Says out loud that an operation stopped answering.
  *
  * The timeout is checked BETWEEN attempts, so a platform call that blocks inside
- * one never gives control back and the test neither fails nor finishes - measured
- * on API 25, where a scroll blocked in the emulator's graphics stack. Such a call
- * cannot be interrupted, so this only reports.
+ * one never gives control back and the test neither fails nor finishes. Such a
+ * call cannot be interrupted, so this only reports.
  */
 internal fun startStallWatchdog(
     config: KabukiConfig,

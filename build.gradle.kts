@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.binaryCompatibilityValidator)
+    alias(libs.plugins.detekt) apply false
 }
 
 // Read here: the `libs` accessor is not available inside allprojects { }.
@@ -19,6 +20,22 @@ val jvmTargetVersion = libs.versions.jvmTarget.get()
 val kotlinLanguageVersion = KotlinVersion.fromVersion(libs.versions.kotlinLanguage.get())
 val kotlinCoreLibrariesVersion = libs.versions.kotlinCoreLibraries.get()
 val repoUrl = "https://github.com/KabukiCompose/Kabuki"
+
+subprojects {
+    apply(plugin = "dev.detekt")
+
+    // BLOCKS the build on any finding, down to a single over-long line.
+    // Thresholds live in config/detekt/detekt.yml, each with its reason.
+    extensions.configure<dev.detekt.gradle.extensions.DetektExtension> {
+        config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+        buildUponDefaultConfig = true
+    }
+
+    // Compose has its own ways to get things wrong - modifier order, state
+    // hoisting, a composable that returns a value - and detekt knows none of them
+    // by itself.
+    dependencies.add("detektPlugins", rootProject.libs.composeRules.detekt)
+}
 
 allprojects {
     // Namespace verified through the KabukiCompose GitHub org - no domain needed.
@@ -36,7 +53,7 @@ allprojects {
     }
 
     // Desktop tests can mirror the scene into a real window. Off unless asked for -
-    // measured, they cost 3.5 of the suite's 4 minutes:
+    // they cost most of the suite's run time:
     //   ./gradlew jvmTest -Pkabuki.window
     tasks.withType<Test>().configureEach {
         systemProperty("kabuki.window", providers.gradleProperty("kabuki.window").isPresent)

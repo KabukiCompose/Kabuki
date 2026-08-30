@@ -1,0 +1,231 @@
+name: check
+
+# Everything a pull request has to pass: the build on two JDKs, static analysis,
+# a Kotlin 2.2 consumer, the opt-in window tests under a virtual display, and a
+# linter for these files. Instrumented tests live in device.yml - they are slow
+# and start by hand.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Nothing here needs write access, and a token that cannot write cannot be abused.
+permissions: {}
+
+# A new push supersedes the previous run on the same ref.
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Everything here depends on the JDK the build runs on: jvmToolchain is not set
+  # on purpose (it would shut out anyone below 21), so the bytecode level comes
+  # from a compiler flag and the compiler itself comes from the runner.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # One red cell should not hide the state of the other.
+      fail-fast: false
+      matrix:
+        java: [17, 21]
+    steps:
+      # Pinned by full SHA, not by tag: tags are mutable pointers, and rewriting
+      # them is exactly how tj-actions compromised 23k repositories in 2025.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      # It validates gradle-wrapper.jar on the way in, and every job here that
+      # runs Gradle goes through it: a swapped jar in a pull request would be
+      # code execution on the runner, and nothing else looks at that binary.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Assemble
+        run: ./gradlew assemble --stacktrace
+
+      # Every module, not a list of three - a new module with tests would
+      # otherwise never run here. Windows are off by default, so a failure means
+      # the headless scene needs a display.
+      - name: Desktop tests
+        run: ./gradlew jvmTest --stacktrace
+
+      # Without the reports a red run is a wall of text and nothing to open.
+      - name: Keep the reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          # Artifact names must differ across matrix cells.
+          name: test-reports-jdk${{ matrix.java }}
+          path: |
+            build/*/reports/tests/**
+            build/*/test-results/**
+          retention-days: 7
+
+  # Static checks read the code, not the JDK that compiled it, so one run is
+  # enough. Kept apart from the matrix to say so, and to run alongside it.
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Public API
+        run: ./gradlew apiCheck --stacktrace
+
+      # Both compilations: the JVM one covers commonMain, the Android one covers
+      # what only exists there. Source-set tasks would run without type resolution
+      # and see less.
+      - name: Static analysis
+        run: ./gradlew detektMainJvm detektDebugAndroid --stacktrace
+
+      # Android Lint has broken this build before, and it looks at androidMain
+      # only - nothing else in the pipeline does.
+      - name: Android Lint
+        run: ./gradlew lint --stacktrace
+
+      - name: Keep the reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: static-analysis-reports
+          path: |
+            build/*/reports/detekt/**
+            build/*/reports/lint-results*
+          retention-days: 7
+
+  # A consumer sees the artifacts, not the source tree: the metadata they carry
+  # and the stdlib they drag in. This build is on Kotlin 2.2 - the version the
+  # README promises - and it is the only place that check happens.
+  consumer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Two halves of one promise: metadata 2.2 says which COMPILER can read
+        # us, Java 11 bytecode says which RUNTIME can. Only the JDK 11 cell
+        # checks the second half - our own build runs on 21.
+        java: [11, 21]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Two JDKs, not interchangeable: our build needs 17+ (AGP 8.13 refuses
+      # below), the matrix needs the consumer on 11. In this order JAVA_HOME
+      # ends up on the build JDK and the line below keeps the other.
+      - name: Set up the consumer JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Remember where the consumer JDK landed
+        run: echo "CONSUMER_JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+
+      - name: Set up the build JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Publish to the local repository
+        run: ./gradlew publishToMavenLocal --stacktrace
+
+      # Two consumers: a plain JVM one and a KMP one with Kabuki in commonTest.
+      # Its own daemon on this cell's JDK - that is what makes cell 11 mean
+      # anything.
+      - name: Build the consumers on Kotlin 2.2
+        run: >
+          ./gradlew -p consumer-check build --stacktrace
+          -Dorg.gradle.java.home="$CONSUMER_JAVA_HOME"
+
+  # The three visible-window tests are opt-in locally, so CI is the only place
+  # they ever run. A virtual display is all they need.
+  window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Install a virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Visible-window tests
+        run: >
+          xvfb-run --auto-servernum
+          ./gradlew :kabuki-runner:jvmTest --tests "*VisibleWindowSelfTest*"
+          -Pkabuki.window --stacktrace
+
+  # The workflows and the actions they call are code too, and the ways they go
+  # wrong - injections, over-broad permissions, unpinned actions - have their own
+  # linter.
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Pinned like the actions above: an unpinned linter turns its next release
+      # into a red build on a commit that changed nothing.
+      - name: Lint the workflows
+        run: pipx run zizmor==1.29.0 --persona=regular .github/workflows/ .github/actions/
+
+  # One stable name to require in branch protection, instead of five that change
+  # whenever a matrix does.
+  check-ok:
+    needs: [build, checks, consumer, window, workflows]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Everything green
+        run: |
+          echo "build=${{ needs.build.result }} checks=${{ needs.checks.result }}"
+          echo "consumer=${{ needs.consumer.result }} window=${{ needs.window.result }} workflows=${{ needs.workflows.result }}"
+          test "${{ needs.build.result }}" = "success"
+          test "${{ needs.checks.result }}" = "success"
+          test "${{ needs.consumer.result }}" = "success"
+          test "${{ needs.window.result }}" = "success"
+          test "${{ needs.workflows.result }}" = "success"

@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
  * keep anything static (a scene registry, the clock, the dispatcher), parallel
  * execution stops working regardless of our own architecture.
  *
- * Measured: threads speed the suite up several times over, while forked JVMs are
+ * Threads speed the suite up several times over, while forked JVMs are
  * a net loss - each one re-initialises Skiko. Hence no maxParallelForks.
  */
 class ParallelScenesProbe {

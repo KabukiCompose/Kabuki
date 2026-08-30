@@ -107,8 +107,8 @@ class LookalikeTagSelfTest {
         }
 
         // The common case by far: entry names repeat across screens, so the screen
-        // on display is simply not the expected one. Measured in the sample's own
-        // suite, where a failed navigation produced exactly this.
+        // on display is simply not the expected one - a failed navigation looks
+        // exactly like this.
         val message = error.message.orEmpty()
         assertTrue("PlaybillTags.CARD" in message, "The tag on screen is not named: $message")
         assertTrue("-keepnames" !in message, "A readable enum name must not be read as R8's: $message")

@@ -1,0 +1,63 @@
+name: "Kabuki instrumented tests"
+outputDir: "marathon-report"
+debug: false
+# Telemetry is NOT configured here: analytics and crash reporting are CLI flags,
+# on by default, and a line in this file does not touch them. They are turned off
+# in the workflow, on the command line.
+
+# No retries, deliberately. A flaky test in a TESTING library is a bug in the
+# library, and a retry hides the one thing we need to see. Quota zero rather than
+# a named strategy - "fixed-quota" is the type this version documents.
+retryStrategy:
+  type: "fixed-quota"
+  totalAllowedRetryQuota: 0
+  retryPerTestQuota: 0
+
+# One instrumentation launch for everything: each batch costs another launch, and
+# small batches cost several minutes per cell. Batching spreads tests across
+# DEVICES, and a cell has exactly one. The price is state shared between tests,
+# and Kabuki keeps none - an app WITH singletons needs smaller batches.
+batchingStrategy:
+  type: "fixed-size"
+  size: 500
+
+# A test that stops answering fails the batch instead of hanging the job. Ours
+# finish in seconds - five minutes means something is truly stuck.
+testOutputTimeoutMillis: 300000
+
+vendorConfiguration:
+  type: "Android"
+  # Installing the sample APK takes a minute on a healthy runner and several
+  # times that on a tired one, so the wait here is cut for the tired one. A
+  # timeout buys nothing: the install simply happens again later, and the cell
+  # pays the whole wait twice.
+  timeoutConfiguration:
+    install: "PT8M"
+
+  # Video recording is ON by default and it is expensive: the recorder runs for
+  # every batch, and on a large screen it starves the emulator until adb stops
+  # answering. We capture nothing - a failure is read from the message and the
+  # semantics dump, not from a film.
+  screenRecordConfiguration:
+    preferableRecorderType: "screenshot"
+    videoConfiguration:
+      enabled: false
+    screenshotConfiguration:
+      enabled: false
+  outputs:
+    # The library: a self-instrumenting test APK, there is no application to
+    # install alongside it.
+    - testApplication: "apks/kabuki-runner-debug-androidTest.apk"
+    # The sample: a real application plus the APK that tests it.
+    - application: "apks/sample-debug.apk"
+      testApplication: "apks/sample-debug-androidTest.apk"
+
+# Sharding across MACHINES, not devices: each cell runs one fragment on its own
+# emulator. Values come from the workflow - see the shard axis in device.yml.
+# Fragments cover the whole suite without duplicates. The split is per TEST, so
+# one class lands in several fragments and the counts differ a little.
+filteringConfiguration:
+  allowlist:
+    - type: "fragmentation"
+      index: ${MARATHON_FRAGMENT_INDEX}
+      count: ${MARATHON_FRAGMENT_COUNT}

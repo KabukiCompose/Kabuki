@@ -104,7 +104,7 @@ private fun KabukiTestScope.retryUntilSuccess(
                 block()
                 true
             } catch (e: AssertionError) {
-                // No empty-scene check: measured, Compose raises that as an ISE.
+                // No empty-scene check: Compose raises that as an ISE.
                 lastError = e
                 pause(pollingMillis)
                 false
@@ -119,7 +119,8 @@ private fun KabukiTestScope.retryUntilSuccess(
             }
         }
     } catch (e: ComposeTimeoutException) {
-        // The slow way to the same verdict: the whole timeout, still nothing composed.
+        // Compose's timeout says nothing a reader needs - the real cause is in
+        // lastError and goes into the message below.
         emptySceneErrorOrNull(lastError)?.let { fatal -> throw fatal }
         throw withTreeDump(onTimeout(lastError, timeout))
     }

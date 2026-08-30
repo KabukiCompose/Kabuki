@@ -27,13 +27,11 @@ public actual fun <T : Screen<T>> instantiateScreen(kClass: KClass<T>): T {
     // here would hand out a SECOND instance of a singleton: bindings and scoping
     // would land on a different object than `PlaybillScreen { }` uses, and nothing
     // would look broken until much later.
-    if (!Modifier.isPublic(constructor.modifiers)) {
-        throw IllegalArgumentException(
-            "Screen ${kClass.simpleName} has no readable INSTANCE field and only a non-public " +
-                "constructor. If it is an `object`, its INSTANCE field is missing (minified " +
-                "away?) - keep it, see kabuki-core/consumer-rules.pro. Creating a second " +
-                "instance of a singleton is not something Kabuki will do silently.",
-        )
+    require(Modifier.isPublic(constructor.modifiers)) {
+        "Screen ${kClass.simpleName} has no readable INSTANCE field and only a non-public " +
+            "constructor. If it is an `object`, its INSTANCE field is missing (minified " +
+            "away?) - keep it, see kabuki-core/consumer-rules.pro. Creating a second " +
+            "instance of a singleton is not something Kabuki will do silently."
     }
     makeAccessible(constructor)
     try {

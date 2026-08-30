@@ -82,7 +82,7 @@ public class ClickViaSemanticsAction : KabukiInterceptor {
         }
         // Called straight from the test thread. Wrapping it in onUiThread works on
         // desktop but is forbidden on Android, where the test framework refuses
-        // every action taken from the main thread - measured on API 25.
+        // every action taken from the main thread.
         operation.node.performSemanticsAction(SemanticsActions.OnClick)
     }
 }

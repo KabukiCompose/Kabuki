@@ -1,0 +1,77 @@
+# Kabuki detekt configuration.
+#
+# Only the rules whose defaults do not fit this project. Everything else comes
+# from detekt's own defaults (buildUponDefaultConfig = true), so a rule added in
+# a future version arrives switched on rather than silently missing.
+
+complexity:
+  # A DSL class is wide by nature: UiNode is one operation per method, and
+  # splitting it would scatter the API a reader has to hold in one place.
+  LargeClass:
+    allowedLines: 900
+  # Same class, same reason: one operation per method, all in one place.
+  TooManyFunctions:
+    allowedFunctionsPerFile: 40
+    allowedFunctionsPerClass: 40
+    allowedFunctionsPerInterface: 40
+    allowedFunctionsPerObject: 40
+    ignorePrivate: true
+    ignoreDeprecated: true
+  # A composable describes a screen top to bottom; cutting it up to fit a line
+  # budget makes the layout harder to read, not easier.
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+  # UiNode carries its state in the constructor and copies itself with changes.
+  # A screen composable takes its state, its callbacks and a modifier - six is a
+  # normal screen, not a design smell.
+  LongParameterList:
+    allowedConstructorParameters: 14
+    allowedFunctionParameters: 7
+
+exceptions:
+  # Off, and not for convenience. Kabuki catches Throwable in exactly two shapes,
+  # both of them the point rather than an oversight: "report the failure, then
+  # rethrow it" and "isolate somebody else's callback so it cannot decide the
+  # run's outcome". Narrowing them would break the guarantee - an assert inside a
+  # listener throws an AssertionError, which is not an Exception.
+  TooGenericExceptionCaught:
+    active: false
+  # Same reason: `passed { }` swallows an AssertionError because answering instead
+  # of failing IS its contract, and the retry loop replaces Compose's timeout with
+  # a message that carries the real cause.
+  SwallowedException:
+    active: false
+
+naming:
+  # Composables are PascalCase by convention.
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+  # Test tags live next to the screen they mark - the very pattern this library
+  # exists to support - so a file named after its screen also holds a Tags enum.
+  MatchingDeclarationName:
+    active: false
+
+style:
+  # Screen and NodeHost are abstract to say "extend me", even where every member
+  # has a default. Turning them into open classes would lose that.
+  AbstractClassCanBeConcreteClass:
+    active: false
+  # 130, not 120: failure messages are long interpolated strings, and a tighter
+  # budget makes people CUT the message instead of wrapping the line.
+  MaxLineLength:
+    maxLineLength: 130
+  # Guard clauses ARE the readable form: rule out what disqualifies the input,
+  # then do the work. Counting them as complexity pushes code the other way.
+  ReturnCount:
+    excludeGuardClauses: true
+  # The retry layer has three honest exits in one function: a usage error, an
+  # empty-scene verdict, a timeout with a tree dump.
+  ThrowsCount:
+    max: 3
+    excludeGuardClauses: true
+
+coroutines:
+  # A dispatcher parameter on every entry point would be API noise: Kabuki has no
+  # dependency injection, and the only dispatcher use is one internal watchdog.
+  InjectDispatcher:
+    active: false

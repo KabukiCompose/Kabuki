@@ -32,12 +32,12 @@ enum class NavTags {
  * Playbill column count: <600dp - 1, <840dp - 2, otherwise 3 (Material 3 thresholds).
  */
 @Composable
-fun TheaterApp(state: TheaterState) {
+fun TheaterApp(state: TheaterState, modifier: Modifier = Modifier) {
     MaterialTheme {
         val snackbarHostState = remember { SnackbarHostState() }
         val coroutineScope = rememberCoroutineScope()
 
-        BoxWithConstraints {
+        BoxWithConstraints(modifier = modifier) {
             val expanded = maxWidth >= 840.dp
             val playbillColumns = when {
                 maxWidth < 600.dp -> 1

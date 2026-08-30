@@ -102,9 +102,9 @@ class DocumentationConsistencyTest {
         assumeTrue(NO_DOCUMENTS, documents.isNotEmpty())
         val modules = declaredModules()
         // Prose names a module without its group far more often than with it, and
-        // that is how `kabuki-interop-junit4` lived in the migration skill until
-        // 2026-08-18 - invisible to the coordinate check above, the very check
-        // that exists to stop invented artifact names.
+        // that is how an invented `kabuki-interop-junit4` once lived in the
+        // migration skill - invisible to the coordinate check above, the very
+        // check that exists to stop names like it.
         val mentions = documents.flatMap { file ->
             BARE_MODULE.findAll(file.readText()).map { match -> file to match.value }
         }
@@ -126,7 +126,11 @@ class DocumentationConsistencyTest {
     fun everyKabukiPackageMentionedInTheSkillExists() {
         val skill = skillFile()
         assumeTrue("The migration skill is not part of this checkout", skill.isFile)
-        val sources = repoRoot.resolve("kabuki-core/src/commonMain/kotlin")
+        // Every published module, not just the core one: a reader needs
+        // kabuki.runner as much as kabuki.page, and looking in one module only
+        // made the skill unable to name the rest without failing here.
+        val sources = listOf("kabuki-core", "kabuki-runner", "kabuki-semantics", "kabuki-junit4")
+            .map { module -> repoRoot.resolve("$module/src/commonMain/kotlin") }
         val mentioned = PACKAGE.findAll(skill.readText())
             .map { match -> match.groupValues[1] }
             .distinct()
@@ -134,7 +138,9 @@ class DocumentationConsistencyTest {
 
         assertTrue(mentioned.isNotEmpty(), "No kabuki.* packages found in the skill - format changed?")
 
-        val missing = mentioned.filterNot { pkg -> sources.resolve(pkg.replace('.', '/')).isDirectory }
+        val missing = mentioned.filterNot { pkg ->
+            sources.any { root -> root.resolve(pkg.replace('.', '/')).isDirectory }
+        }
         assertTrue(
             missing.isEmpty(),
             "The migration skill imports from packages that do not exist: $missing",

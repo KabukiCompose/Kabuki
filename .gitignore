@@ -1,5 +1,7 @@
 .gradle/
-/build/
+# Any level. Modules write into the root build/ (layout.buildDirectory in the
+# root script), but the ignore must not depend on that line staying there.
+build/
 .idea/
 .kotlin/
 *.iml
@@ -7,6 +9,13 @@ local.properties
 out/
 captures/
 *.hprof
+
+# Left behind by a local Marathon run: the APKs it consumes, its reports and the
+# runner itself.
+apks/
+marathon-report/
+marathon.zip
+marathon-*/
 
 # macOS
 .DS_Store

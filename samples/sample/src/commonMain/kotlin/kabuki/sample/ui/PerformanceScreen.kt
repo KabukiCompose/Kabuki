@@ -48,6 +48,7 @@ fun PerformanceScreen(
     expandedLayout: Boolean,
     onBack: () -> Unit,
     onShowSnackbar: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var details by remember { mutableStateOf<Performance?>(null) }
     LaunchedEffect(performanceId) {
@@ -59,14 +60,14 @@ fun PerformanceScreen(
 
     val loaded = details
     if (loaded == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(modifier = Modifier.testTag(PerformanceTags.LOADER))
         }
         return
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
@@ -142,7 +143,7 @@ fun PerformanceScreen(
             performance = loaded,
             repository = state.repository,
             onDismiss = { seatDialogOpen = false },
-            onBought = { ticket ->
+            onBuy = { ticket ->
                 state.tickets += ticket
                 seatDialogOpen = false
                 onShowSnackbar("Ticket purchased: row ${ticket.row}, seat ${ticket.number}")
@@ -176,8 +177,8 @@ private fun Poster() {
 
 @Composable
 private fun DescriptionBlock(
-    modifier: Modifier = Modifier,
     performance: Performance,
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(text = performance.fullDescription, style = MaterialTheme.typography.bodyLarge)

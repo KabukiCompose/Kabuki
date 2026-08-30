@@ -1,0 +1,349 @@
+name: device
+
+# Instrumented tests on emulators - the slowest thing we run, so it starts BY
+# HAND: run it once the branch is ready, fix every cell in one go, merge.
+# Skipping it stops working once device-ok is required in branch protection.
+# The APKs are built ONCE and handed over as an artifact - that build has nothing
+# to do with which emulator a cell runs.
+on:
+  workflow_dispatch:
+  # On main it runs by itself: nobody is waiting there, and a broken merge should
+  # be visible without anyone remembering to look.
+  push:
+    branches: [main]
+  # And on a pull request that changes the emulator setup itself. GitHub offers
+  # "Run workflow" only for workflows that exist on the default branch, so this
+  # is the only way to test a change here before it lands.
+  pull_request:
+    paths:
+      - .github/workflows/device.yml
+      - .github/actions/instrumented-tests/action.yml
+      - Marathonfile
+
+permissions: {}
+
+concurrency:
+  # By ref, so a new push kills the run of the commit it replaced - a matrix of
+  # idle emulators is the priciest thing to leave running. Keying by commit would
+  # lose that. Accepted: a manual run and the PR run of the same commit get
+  # different refs and both proceed; the later result wins.
+  group: device-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned like every action here; the archive comes from the project's own
+  # GitHub releases over https.
+  MARATHON_VERSION: "0.10.5"
+
+jobs:
+  # Build once, test in every cell. This job never sees an emulator, and the
+  # cells below never see Gradle.
+  apks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # It validates gradle-wrapper.jar on the way in, and every job here that
+      # runs Gradle goes through it: a swapped jar in a pull request would be
+      # code execution on the runner, and nothing else looks at that binary.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      # kabuki-runner is a library: one self-instrumenting test APK. The sample is
+      # an application, so it needs its own APK next to the test one.
+      - name: Build the APKs
+        run: >
+          ./gradlew
+          :kabuki-runner:assembleDebugAndroidTest
+          :samples:sample:assembleDebug
+          :samples:sample:assembleDebugAndroidTest
+          --stacktrace
+
+      # Flat directory with stable names: Marathonfile points at these paths, and
+      # they must not depend on where Gradle happened to put its output.
+      - name: Collect them
+        run: |
+          mkdir -p apks
+          cp build/kabuki-runner/outputs/apk/androidTest/debug/kabuki-runner-debug-androidTest.apk apks/
+          cp build/samples-sample/outputs/apk/debug/sample-debug.apk apks/
+          cp build/samples-sample/outputs/apk/androidTest/debug/sample-debug-androidTest.apk apks/
+          ls -l apks
+
+      # One day is enough to hand them over inside this run. Re-running a failed
+      # cell later than that finds no artifact - use "Re-run all jobs" then, so
+      # this job builds them again.
+      - name: Hand them to the emulators
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apks
+          path: apks
+          retention-days: 1
+
+  instrumented:
+    needs: apks
+    # Spelled out, or the cell would be named after every matrix key at once.
+    name: api ${{ matrix.api }}, ${{ matrix.label }}, shard ${{ matrix.shard }}/${{ matrix.shards }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      # A red cell must not hide the others - the point is WHICH device disagrees.
+      fail-fast: false
+      # Every cell spelled out instead of multiplying axes, because the number of
+      # shards is NOT the same for every device: a configuration takes as many
+      # pieces as it needs to finish alongside the others. Both device axes broke
+      # us independently - old and new API for different reasons, and a wide
+      # screen because the app did not fit - so all four combinations stay.
+      matrix:
+        include:
+          # The slowest one: new API on a 2560x1800 screen.
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 6 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 6 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 6 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 3, shards: 6 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 4, shards: 6 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 5, shards: 6 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 5 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 5 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 2, shards: 5 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 3, shards: 5 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 4, shards: 5 }
+          - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 4 }
+          - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 4 }
+          - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 4 }
+          - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 3, shards: 4 }
+          # The fastest one.
+          - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 2 }
+          - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 2 }
+    steps:
+      # For the Marathonfile only - nothing here is compiled.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Marathon runs on the JVM. It is the only reason Java is here.
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Take the APKs
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: apks
+          path: apks
+
+      # 57 MB per cell adds up over seventeen of them, and the archive never
+      # changes for a given version - the version IS the key.
+      - name: Cache Marathon
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/marathon-${{ env.MARATHON_VERSION }}
+          key: marathon-${{ env.MARATHON_VERSION }}
+
+      - name: Install Marathon
+        run: |
+          bin="${HOME}/marathon-${MARATHON_VERSION}/bin"
+          if [ ! -x "${bin}/marathon" ]; then
+            base=https://github.com/MarathonLabs/marathon/releases/download
+            url="${base}/${MARATHON_VERSION}/marathon-${MARATHON_VERSION}.zip"
+            curl --retry 3 --retry-delay 5 -fsSL -o /tmp/marathon.zip "${url}"
+            # Whatever lands here is cached as it stands, so half an archive
+            # would break every later run. Better to leave nothing behind.
+            if ! unzip -q /tmp/marathon.zip -d "${HOME}"; then
+              rm -rf "${HOME}/marathon-${MARATHON_VERSION}"
+              exit 1
+            fi
+          fi
+          echo "${bin}" >> "${GITHUB_PATH}"
+
+      # Without it the emulator is slow enough to time tests out instead of
+      # failing them, which reads as a Kabuki bug.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # The emulator action downloads these with no retry of its own: one archive
+      # that arrives corrupted kills the cell. Fetching them first leaves it only
+      # the build tools, whose version is a constant inside it - copying that
+      # constant here would go stale in silence. The arch and the target spelled
+      # out below must match the emulator steps, or this warms up the wrong image.
+      - name: Warm up the SDK
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          API: ${{ matrix.api }}
+        run: |
+          sdk="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "${sdk}" ]; then
+            echo "::warning::No sdkmanager on the image; the action installs the tools itself."
+            exit 0
+          fi
+          packages=("platform-tools" "emulator" "platforms;android-${API}")
+          packages+=("system-images;android-${API};default;x86_64")
+          for attempt in 1 2 3; do
+            # sdkmanager calls a corrupted archive a Warning, so its exit code
+            # is not something to lean on: what landed on disk decides. A package
+            # lives in the directory its own name spells, semicolons as slashes.
+            "${sdk}" --install "${packages[@]}" < <(yes) > /dev/null || true
+            missing=""
+            for package in "${packages[@]}"; do
+              if [ ! -d "${ANDROID_HOME}/${package//;//}" ]; then
+                missing="${missing} ${package}"
+              fi
+            done
+            if [ -z "${missing}" ]; then
+              exit 0
+            fi
+            echo "Attempt ${attempt} left these behind:${missing}"
+            rm -rf "${ANDROID_HOME}/.temp"
+            if [ "${attempt}" -ne 3 ]; then sleep 15; fi
+          done
+          # A warm-up is an optimisation: it warns and steps aside rather than
+          # taking the cell down before the action has had its own try.
+          echo "::warning::SDK warm-up failed; the action will try on its own."
+
+      # A restored snapshot skips the cold boot - worth a lot on the newest API
+      # level, next to nothing on the oldest, which boots quickly anyway. Cached
+      # per configuration: Nexus 5X and pixel_c are different AVDs. The version in
+      # the key is ours to bump whenever a stored snapshot stops being good - a
+      # bad one is otherwise restored forever.
+      - name: Restore the emulator snapshot
+        id: avd-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v2-${{ matrix.api }}-${{ matrix.label }}
+
+      # ONE cell per configuration builds the snapshot, and the same one saves it.
+      # Every shard shares the key, so they all miss together - letting each of
+      # them boot an emulator just to store it would burn the gain on the very run
+      # that pays for it, and the cache would go to whoever finished first.
+      # Failing here is not fatal: the snapshot is an optimisation, and a cell
+      # without one just boots cold. Whoever runs next takes another shot at it.
+      - name: Create the snapshot
+        id: snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true' && matrix.shard == 0
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          profile: ${{ matrix.profile }}
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          # A snapshot freezes the system exactly as it is. Taken the moment the
+          # boot flag flips, it stores a machine still starting its services: on
+          # restore the first adb command lands on that machine and is killed,
+          # and the cell dies before Marathon starts. Let it settle first, then
+          # do the wake-up the action itself does after every boot - if that one
+          # cannot survive here, it will not survive a restore either.
+          script: |
+            sleep 60
+            adb shell input keyevent 82
+
+      # A creation that died halfway can leave an AVD holding a half-written
+      # snapshot, and every attempt below would restore that same wreck - the
+      # retry included, since it reuses whatever AVD it finds.
+      - name: Drop a half-made AVD
+        if: steps.snapshot.outcome == 'failure'
+        run: rm -rf "${HOME}/.android/avd"
+
+      # A skipped or failed creation leaves nothing worth storing, and both show
+      # up here as an outcome other than success.
+      - name: Keep the snapshot for the next run
+        if: steps.snapshot.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v2-${{ matrix.api }}-${{ matrix.label }}
+
+      # Everything this step does before Marathon belongs to somebody else: an SDK
+      # package that arrives corrupted, an emulator that will not boot, adb
+      # losing the device. Such a failure says nothing about Kabuki.
+      - name: Instrumented tests
+        id: tests
+        continue-on-error: true
+        uses: ./.github/actions/instrumented-tests
+        with:
+          api: ${{ matrix.api }}
+          profile: ${{ matrix.profile }}
+          shard: ${{ matrix.shard }}
+          shards: ${{ matrix.shards }}
+
+      # Marathon writes its report as it goes, so a report holding no files at
+      # all proves the tests never ran and the failure was not ours. A FAILING
+      # TEST always leaves a report and is never retried: in a testing library
+      # our own flake is the one thing we must see. The verdict is reached here,
+      # once, and announced - a retry that becomes routine would otherwise hide
+      # behind a green check with nothing but a longer run to show for it.
+      - name: Judge the failure
+        id: verdict
+        if: steps.tests.outcome == 'failure'
+        run: |
+          if find marathon-report -type f 2>/dev/null | grep -q .; then
+            echo "Marathon left a report; the suite itself is red."
+          else
+            echo "::warning::Marathon never ran; taking one more attempt."
+            echo "retry=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Instrumented tests, second attempt
+        if: steps.verdict.outputs.retry == 'true'
+        uses: ./.github/actions/instrumented-tests
+        with:
+          api: ${{ matrix.api }}
+          profile: ${{ matrix.profile }}
+          shard: ${{ matrix.shard }}
+          shards: ${{ matrix.shards }}
+
+      # Without this the cell would go green on a red suite: continue-on-error
+      # above swallows the failure, and the retry deliberately skips this case.
+      - name: Fail on a test failure
+        if: steps.tests.outcome == 'failure' && steps.verdict.outputs.retry != 'true'
+        run: exit 1
+
+      - name: Keep the reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: device-reports-api${{ matrix.api }}-${{ matrix.label }}-shard${{ matrix.shard }}
+          path: marathon-report/**
+          retention-days: 7
+
+  # One name for the whole matrix. Branch protection wants a check by NAME, and
+  # matrix cells are named after their values - add an axis and the required
+  # check silently stops existing. This job never changes its name.
+  device-ok:
+    # Both jobs, so the log says WHICH half failed. Depending on the cells alone
+    # would report a plain "skipped" whenever the build broke.
+    needs: [apks, instrumented]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every device agreed
+        run: |
+          echo "apks=${{ needs.apks.result }} instrumented=${{ needs.instrumented.result }}"
+          test "${{ needs.apks.result }}" = "success"
+          test "${{ needs.instrumented.result }}" = "success"
