@@ -102,9 +102,9 @@ class DocumentationConsistencyTest {
         assumeTrue(NO_DOCUMENTS, documents.isNotEmpty())
         val modules = declaredModules()
         // Prose names a module without its group far more often than with it, and
-        // that is how `kabuki-interop-junit4` lived in the migration skill until
-        // 2026-08-18 - invisible to the coordinate check above, the very check
-        // that exists to stop invented artifact names.
+        // that is how an invented `kabuki-interop-junit4` once lived in the
+        // migration skill - invisible to the coordinate check above, the very
+        // check that exists to stop names like it.
         val mentions = documents.flatMap { file ->
             BARE_MODULE.findAll(file.readText()).map { match -> file to match.value }
         }

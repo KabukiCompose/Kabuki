@@ -13,8 +13,8 @@ kotlin {
             implementation("io.github.kabukicompose:kabuki-semantics:0.1.0-SNAPSHOT")
         }
         // The shape a real project uses. Does NOT prove it: with one target,
-        // moving this to jvmTest keeps the build green (measured 2026-08-29) -
-        // commonTest compiles inside jvmTest and inherits its dependencies.
+        // moving this to jvmTest keeps the build green - commonTest compiles
+        // inside jvmTest and inherits its dependencies.
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation("io.github.kabukicompose:kabuki-runner:0.1.0-SNAPSHOT")

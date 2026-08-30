@@ -12,9 +12,9 @@ import kotlin.time.Duration.Companion.milliseconds
  * Self-test for the empty scene: no `setContent`, so nothing is composed.
  *
  * Android only, and not for convenience: a desktop scene exists from the moment
- * the runner creates it - measured, the same test on the JVM fails with an
- * ordinary "node not found". Built on [runKabukiTest] rather than the shared base
- * class, which always installs the app.
+ * the runner creates it, so the same test on the JVM fails with an ordinary
+ * "node not found". Built on [runKabukiTest] rather than the shared base class,
+ * which always installs the app.
  *
  * Covers the slow path, where Kabuki did not fill the scene and waits the timeout
  * out before ruling. The fast path needs a misconfigured APK to reproduce.

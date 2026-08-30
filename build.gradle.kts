@@ -24,7 +24,7 @@ val repoUrl = "https://github.com/KabukiCompose/Kabuki"
 subprojects {
     apply(plugin = "dev.detekt")
 
-    // BLOCKS the build on any finding - measured, one over-long line fails it.
+    // BLOCKS the build on any finding, down to a single over-long line.
     // Thresholds live in config/detekt/detekt.yml, each with its reason.
     extensions.configure<dev.detekt.gradle.extensions.DetektExtension> {
         config.setFrom(rootProject.file("config/detekt/detekt.yml"))
@@ -53,7 +53,7 @@ allprojects {
     }
 
     // Desktop tests can mirror the scene into a real window. Off unless asked for -
-    // measured, they cost 3.5 of the suite's 4 minutes:
+    // they cost most of the suite's run time:
     //   ./gradlew jvmTest -Pkabuki.window
     tasks.withType<Test>().configureEach {
         systemProperty("kabuki.window", providers.gradleProperty("kabuki.window").isPresent)

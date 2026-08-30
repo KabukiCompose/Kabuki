@@ -224,7 +224,7 @@ public class UiNode(
     public fun assertIsNotDisplayed() {
         retryOperation("assertIsNotDisplayed") {
             // No hierarchy check here: Compose's own assertIsNotDisplayed demands a
-            // root and throws on an empty scene - measured by mutation.
+            // root and throws on an empty scene.
             interaction().assertIsNotDisplayed()
         }
     }

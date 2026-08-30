@@ -33,9 +33,6 @@ env:
   # Pinned like every action here; the archive comes from the project's own
   # GitHub releases over https.
   MARATHON_VERSION: "0.10.5"
-  # Must match the length of the shard axis below. Three, not four: measured
-  # 2026-08-30, four shards finished no faster (9m16s vs 9m22s) because the extra
-  # cells start late - the runner pool hands them out in waves.
   SHARD_COUNT: "3"
 
 jobs:

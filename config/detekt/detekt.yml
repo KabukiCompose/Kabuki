@@ -57,8 +57,7 @@ style:
   AbstractClassCanBeConcreteClass:
     active: false
   # 130, not 120: failure messages are long interpolated strings, and a tighter
-  # budget makes people CUT the message instead of wrapping the line - caught
-  # exactly that in UiNode on 2026-08-30.
+  # budget makes people CUT the message instead of wrapping the line.
   MaxLineLength:
     maxLineLength: 130
   # Guard clauses ARE the readable form: rule out what disqualifies the input,

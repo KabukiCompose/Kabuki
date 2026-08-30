@@ -104,7 +104,7 @@ private fun KabukiTestScope.retryUntilSuccess(
                 block()
                 true
             } catch (e: AssertionError) {
-                // No empty-scene check: measured, Compose raises that as an ISE.
+                // No empty-scene check: Compose raises that as an ISE.
                 lastError = e
                 pause(pollingMillis)
                 false

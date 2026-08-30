@@ -11,10 +11,10 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Self-test for the merged/unmerged rules. Every test here pins down a MEASURED
- * fact about Compose 1.11, not a preference: the tests under a non-default
- * strategy exist to show what the default protects from - remove the rule and
- * they are the ones that keep passing while the others break.
+ * Self-test for the merged/unmerged rules. Every test here pins down how Compose
+ * actually behaves, not a preference: the tests under a non-default strategy
+ * exist to show what the default protects from - remove the rule and they are the
+ * ones that keep passing while the others break.
  *
  * The probe is [SelfTestTags.TREE_BUTTON]: a clickable node whose text lives in a
  * tagged child.

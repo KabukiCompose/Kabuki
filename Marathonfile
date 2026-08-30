@@ -2,9 +2,8 @@ name: "Kabuki instrumented tests"
 outputDir: "marathon-report"
 debug: false
 # Telemetry is NOT configured here: analytics and crash reporting are CLI flags,
-# on by default, and a line in this file does not touch them (measured on 0.10.5 -
-# the run still logged analyticsTracking=true). They are turned off in the
-# workflow, on the command line.
+# on by default, and a line in this file does not touch them. They are turned off
+# in the workflow, on the command line.
 
 # No retries, deliberately. A flaky test in a TESTING library is a bug in the
 # library, and a retry hides the one thing we need to see. Quota zero rather than
@@ -14,11 +13,10 @@ retryStrategy:
   totalAllowedRetryQuota: 0
   retryPerTestQuota: 0
 
-# One instrumentation launch for everything: each batch costs another launch
-# (measured 2026-08-30 - batches of 10 turned 141 tests into 440 seconds instead
-# of 150). Batching spreads tests across DEVICES, and a cell has exactly one.
-# The price is state shared between tests, and Kabuki keeps none. An app WITH
-# singletons needs smaller batches - do not copy this number blindly.
+# One instrumentation launch for everything: each batch costs another launch, and
+# small batches cost several minutes per cell. Batching spreads tests across
+# DEVICES, and a cell has exactly one. The price is state shared between tests,
+# and Kabuki keeps none - an app WITH singletons needs smaller batches.
 batchingStrategy:
   type: "fixed-size"
   size: 500
@@ -39,9 +37,8 @@ vendorConfiguration:
 
 # Sharding across MACHINES, not devices: each cell runs one fragment on its own
 # emulator. Values come from the workflow - see the shard axis in device.yml.
-# Verified 2026-08-30 on the real APKs: four fragments covered all 141 tests, no
-# duplicates, and the split is per TEST - one class lands in several fragments.
-# Counts differ by up to ~20%: the algorithm balances the run, not the count.
+# Fragments cover the whole suite without duplicates. The split is per TEST, so
+# one class lands in several fragments and the counts differ a little.
 filteringConfiguration:
   allowlist:
     - type: "fragmentation"
