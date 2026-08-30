@@ -145,12 +145,24 @@ jobs:
           name: apks
           path: apks
 
+      # 57 MB per cell adds up over seventeen of them, and the archive never
+      # changes for a given version - the version IS the key.
+      - name: Cache Marathon
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/marathon-${{ env.MARATHON_VERSION }}
+          key: marathon-${{ env.MARATHON_VERSION }}
+
       - name: Install Marathon
         run: |
-          curl -fsSL -o marathon.zip \
-            "https://github.com/MarathonLabs/marathon/releases/download/${MARATHON_VERSION}/marathon-${MARATHON_VERSION}.zip"
-          unzip -q marathon.zip
-          echo "${PWD}/marathon-${MARATHON_VERSION}/bin" >> "${GITHUB_PATH}"
+          bin="${HOME}/marathon-${MARATHON_VERSION}/bin"
+          if [ ! -x "${bin}/marathon" ]; then
+            base=https://github.com/MarathonLabs/marathon/releases/download
+            url="${base}/${MARATHON_VERSION}/marathon-${MARATHON_VERSION}.zip"
+            curl -fsSL -o /tmp/marathon.zip "${url}"
+            unzip -q /tmp/marathon.zip -d "${HOME}"
+          fi
+          echo "${bin}" >> "${GITHUB_PATH}"
 
       # Without it the emulator is slow enough to time tests out instead of
       # failing them, which reads as a Kabuki bug.
@@ -160,6 +172,43 @@ jobs:
             | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+
+      # A cold emulator boot costs about a minute and a half in every cell. Cached
+      # per configuration - Nexus 5X and pixel_c are different AVDs. The v1 in the
+      # key is ours to bump when the AVD layout changes under us.
+      - name: Restore the emulator snapshot
+        id: avd-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v1-${{ matrix.api }}-${{ matrix.label }}
+
+      # ONE cell per configuration builds the snapshot, and the same one saves it.
+      # Every shard shares the key, so they all miss together - letting each of
+      # them boot an emulator just to store it would burn the gain on the very run
+      # that pays for it, and the cache would go to whoever finished first.
+      - name: Create the snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true' && matrix.shard == 0
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          profile: ${{ matrix.profile }}
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Snapshot saved for the cache."
+
+      - name: Keep the snapshot for the next run
+        if: steps.avd-cache.outputs.cache-hit != 'true' && matrix.shard == 0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v1-${{ matrix.api }}-${{ matrix.label }}
 
       # Marathon finds the SDK through ANDROID_HOME, which the runner image sets.
       # If it ever stops doing that, the failure is loud and precise:
@@ -173,8 +222,10 @@ jobs:
           api-level: ${{ matrix.api }}
           profile: ${{ matrix.profile }}
           arch: x86_64
+          # Reuse the cached AVD and its snapshot, and do not write a new one.
+          force-avd-creation: false
           # Animations fight the test runner; the rest is a headless emulator.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           # Both flags are ON by default and are NOT settable from the
           # Marathonfile: without them every run reports analytics and crashes
