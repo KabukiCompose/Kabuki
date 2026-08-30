@@ -4,18 +4,23 @@ name: device
 # BY HAND: run it once the branch is ready, fix what the four cells report in one
 # go, merge. Skipping it stops being possible once device-ok is required in
 # branch protection: a check that never ran keeps the merge button grey.
+#
+# The APKs are built ONCE and handed to the cells as an artifact. Building them
+# inside each cell cost 3.5-4 minutes four times over, and nothing about that
+# build depends on which emulator the cell runs.
 on:
   workflow_dispatch:
   # On main it runs by itself: nobody is waiting there, and a broken merge should
   # be visible without anyone remembering to look.
   push:
     branches: [main]
-  # And on a pull request that changes THIS file. GitHub offers "Run workflow"
-  # only for workflows that exist on the default branch, so a new or edited
-  # emulator matrix is otherwise untestable until after it lands.
+  # And on a pull request that changes the emulator setup itself. GitHub offers
+  # "Run workflow" only for workflows that exist on the default branch, so this
+  # is the only way to test a change here before it lands.
   pull_request:
     paths:
       - .github/workflows/device.yml
+      - Marathonfile
 
 permissions: {}
 
@@ -29,24 +34,17 @@ concurrency:
   group: device-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pinned like every action here; the archive comes from the project's own
+  # GitHub releases over https.
+  MARATHON_VERSION: "0.10.5"
+
 jobs:
-  instrumented:
+  # Build once, test four times. This job never sees an emulator, and the cells
+  # below never see Gradle.
+  apks:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      # A red cell must not hide the others - the point is WHICH device disagrees.
-      fail-fast: false
-      matrix:
-        # Both axes broke us, independently: old and new API failed for
-        # different reasons (it was 25 and 36; we test 24 as the minSdk floor),
-        # and a wide screen hung the run because the app did not fit. Hence the
-        # full 2x2 - the pair that hurt was old API AND wide screen.
-        api: [24, 36]
-        device:
-          - profile: Nexus 5X
-            label: phone-portrait
-          - profile: pixel_c
-            label: tablet-landscape
+    timeout-minutes: 30
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,6 +65,81 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
+      # kabuki-runner is a library: one self-instrumenting test APK. The sample is
+      # an application, so it needs its own APK next to the test one.
+      - name: Build the APKs
+        run: >
+          ./gradlew
+          :kabuki-runner:assembleDebugAndroidTest
+          :samples:sample:assembleDebug
+          :samples:sample:assembleDebugAndroidTest
+          --stacktrace
+
+      # Flat directory with stable names: Marathonfile points at these paths, and
+      # they must not depend on where Gradle happened to put its output.
+      - name: Collect them
+        run: |
+          mkdir -p apks
+          cp build/kabuki-runner/outputs/apk/androidTest/debug/kabuki-runner-debug-androidTest.apk apks/
+          cp build/samples-sample/outputs/apk/debug/sample-debug.apk apks/
+          cp build/samples-sample/outputs/apk/androidTest/debug/sample-debug-androidTest.apk apks/
+          ls -l apks
+
+      # One day is enough to hand them over inside this run. Re-running a failed
+      # cell later than that finds no artifact - use "Re-run all jobs" then, so
+      # this job builds them again.
+      - name: Hand them to the emulators
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apks
+          path: apks
+          retention-days: 1
+
+  instrumented:
+    needs: apks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      # A red cell must not hide the others - the point is WHICH device disagrees.
+      fail-fast: false
+      matrix:
+        # Both axes broke us, independently: old and new API failed for
+        # different reasons (it was 25 and 36; we test 24 as the minSdk floor),
+        # and a wide screen hung the run because the app did not fit. Hence the
+        # full 2x2 - the pair that hurt was old API AND wide screen.
+        api: [24, 36]
+        device:
+          - profile: Nexus 5X
+            label: phone-portrait
+          - profile: pixel_c
+            label: tablet-landscape
+    steps:
+      # For the Marathonfile only - nothing here is compiled.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Marathon runs on the JVM. It is the only reason Java is here.
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Take the APKs
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: apks
+          path: apks
+
+      - name: Install Marathon
+        run: |
+          curl -fsSL -o marathon.zip \
+            "https://github.com/MarathonLabs/marathon/releases/download/${MARATHON_VERSION}/marathon-${MARATHON_VERSION}.zip"
+          unzip -q marathon.zip
+          echo "${PWD}/marathon-${MARATHON_VERSION}/bin" >> "${GITHUB_PATH}"
+
       # Without it the emulator is slow enough to time tests out instead of
       # failing them, which reads as a Kabuki bug.
       - name: Enable KVM
@@ -76,6 +149,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # Marathon finds the SDK through ANDROID_HOME, which the runner image sets.
+      # If it ever stops doing that, the failure is loud and precise:
+      # "No android SDK path specified".
       - name: Instrumented tests
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -85,28 +161,32 @@ jobs:
           # Animations fight the test runner; the rest is a headless emulator.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: ./gradlew :kabuki-runner:connectedDebugAndroidTest :samples:sample:connectedDebugAndroidTest --stacktrace
+          # Both flags are ON by default and are NOT settable from the
+          # Marathonfile: without them every run reports analytics and crashes
+          # to third parties.
+          script: marathon --analyticsTracking=false --bugsnag=false -m Marathonfile
 
       - name: Keep the reports of a failed run
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: device-reports-api${{ matrix.api }}-${{ matrix.device.label }}
-          path: |
-            build/*/reports/androidTests/**
-            build/*/outputs/androidTest-results/**
+          path: marathon-report/**
           retention-days: 7
 
   # One name for the whole matrix. Branch protection wants a check by NAME, and
   # matrix cells are named after their values - add an axis and the required
   # check silently stops existing. This job never changes its name.
   device-ok:
-    needs: instrumented
+    # Both jobs, so the log says WHICH half failed. Depending on the cells alone
+    # would report a plain "skipped" whenever the build broke.
+    needs: [apks, instrumented]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Every device agreed
         run: |
-          echo "result: ${{ needs.instrumented.result }}"
+          echo "apks=${{ needs.apks.result }} instrumented=${{ needs.instrumented.result }}"
+          test "${{ needs.apks.result }}" = "success"
           test "${{ needs.instrumented.result }}" = "success"

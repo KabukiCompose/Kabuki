@@ -1,0 +1,36 @@
+name: "Kabuki instrumented tests"
+outputDir: "marathon-report"
+debug: false
+# Telemetry is NOT configured here: analytics and crash reporting are CLI flags,
+# on by default, and a line in this file does not touch them (measured on 0.10.5 -
+# the run still logged analyticsTracking=true). They are turned off in the
+# workflow, on the command line.
+
+# No retries, deliberately. A flaky test in a TESTING library is a bug in the
+# library, and a retry hides the one thing we need to see. Quota zero rather than
+# a named strategy - "fixed-quota" is the type this version documents.
+retryStrategy:
+  type: "fixed-quota"
+  totalAllowedRetryQuota: 0
+  retryPerTestQuota: 0
+
+# Batches keep one instrumentation process alive across several tests. One test
+# per batch is the safest and the slowest - cashbox does that for 1600 tests,
+# where isolation is worth more. With 141 the trade goes the other way.
+batchingStrategy:
+  type: "fixed-size"
+  size: 10
+
+# A test that stops answering fails the batch instead of hanging the job. Ours
+# finish in seconds - five minutes means something is truly stuck.
+testOutputTimeoutMillis: 300000
+
+vendorConfiguration:
+  type: "Android"
+  outputs:
+    # The library: a self-instrumenting test APK, there is no application to
+    # install alongside it.
+    - testApplication: "apks/kabuki-runner-debug-androidTest.apk"
+    # The sample: a real application plus the APK that tests it.
+    - application: "apks/sample-debug.apk"
+      testApplication: "apks/sample-debug-androidTest.apk"
