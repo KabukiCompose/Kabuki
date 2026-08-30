@@ -32,6 +32,17 @@ vendorConfiguration:
   # is cheaper than a red cell that says nothing about Kabuki.
   timeoutConfiguration:
     install: "PT3M"
+
+  # Video recording is ON by default and it is expensive: the recorder runs for
+  # every batch, and on a 2560x1800 tablet it starved the emulator until adb
+  # stopped answering and the cell hung. We capture nothing - a failure is read
+  # from the message and the semantics dump, not from a film.
+  screenRecordConfiguration:
+    preferableRecorderType: "screenshot"
+    videoConfiguration:
+      enabled: false
+    screenshotConfiguration:
+      enabled: false
   outputs:
     # The library: a self-instrumenting test APK, there is no application to
     # install alongside it.
