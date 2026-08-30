@@ -101,7 +101,7 @@ So a migrated page object imports `kabuki.page.Screen`, the test imports
 | `KLazyListNode` + `itemType(::Item)` + `childAt<Item>(n)` | `lazyList(TAG) { itemType(::Item) }` + `itemAt<Item>(n)` (scrolls itself) |
 | `KLazyListItemNode` subclass with `child { }` | `ListItem(scope)` subclass with `child(TAG)` / `child { }` |
 | `lazyListItemPosition(n)` modifier (custom) | `Modifier.testListItem(n)` from kabuki-semantics |
-| `intercept { }` | `config = { listeners += ... }` (observing); behavior-changing interceptors: not yet - leave a TODO |
+| `intercept { }` | observing: `config = { listeners += ... }`; changing HOW an operation runs: `config = { interceptors += ... }` - a `KabukiInterceptor` wraps the call inside the retry, see `ClickViaSemanticsAction` |
 | `useUnmergedTree` in screen constructor | nothing - drop it. Kabuki picks the tree per search (tags unmerged, text merged); a single node overrides with `.merged` / `.unmerged`. Only a suite that relied on global unmerged everywhere needs `config = { treeStrategy = TreeStrategy.AlwaysUnmerged }`, and that is a migration crutch to remove later |
 | `KakaoComposeTestRule` global config | `config = { }` block per test or a project base class |
 
@@ -196,5 +196,5 @@ field is deleted - Kabuki screens are context-free.
 
 Summarize: files migrated, tests passing before/after, deleted wait-hacks count,
 behavioral differences the team should know (retry semantics, onScreen root wait),
-and anything left with a TODO (behavior-changing interceptors, framework-specific
-features without a Kabuki equivalent yet).
+and anything left with a TODO (framework-specific features without a Kabuki
+equivalent yet).
