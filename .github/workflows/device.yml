@@ -106,17 +106,19 @@ jobs:
       # screen because the app did not fit - so all four combinations stay.
       matrix:
         include:
-          # The slowest one: new API on a 2560x1800 screen, four pieces.
-          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 4 }
-          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 4 }
-          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 4 }
-          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 3, shards: 4 }
+          # The slowest one: new API on a 2560x1800 screen, five pieces.
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 5 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 5 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 5 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 3, shards: 5 }
+          - { api: 36, profile: pixel_c, label: tablet-landscape, shard: 4, shards: 5 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 4 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 4 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 2, shards: 4 }
+          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 3, shards: 4 }
           - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 0, shards: 3 }
           - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 1, shards: 3 }
           - { api: 24, profile: pixel_c, label: tablet-landscape, shard: 2, shards: 3 }
-          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 3 }
-          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 3 }
-          - { api: 36, profile: Nexus 5X, label: phone-portrait, shard: 2, shards: 3 }
           # The fastest one: it only needs halves.
           - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 0, shards: 2 }
           - { api: 24, profile: Nexus 5X, label: phone-portrait, shard: 1, shards: 2 }
