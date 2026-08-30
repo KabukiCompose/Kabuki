@@ -27,6 +27,11 @@ testOutputTimeoutMillis: 300000
 
 vendorConfiguration:
   type: "Android"
+  # Installing the sample APK once ran past the default and cost a cell a minute
+  # and a half of retries. A slow runner is allowed to take its time here: waiting
+  # is cheaper than a red cell that says nothing about Kabuki.
+  timeoutConfiguration:
+    install: "PT3M"
   outputs:
     # The library: a self-instrumenting test APK, there is no application to
     # install alongside it.
