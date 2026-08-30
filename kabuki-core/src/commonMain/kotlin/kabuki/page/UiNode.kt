@@ -514,9 +514,9 @@ public class UiNode(
                     message = buildString {
                         appendLine("Node $description does not have the expected $colorName within $timeoutUsed.")
                         appendLine("Expected: $expected")
-                        append(
-                            "Actual: " + (actual ?: "<not published - add the kabuki-semantics modifier>"),
-                        )
+                        val missing = "<not published - add the matching kabuki-semantics " +
+                            "modifier in production code>"
+                        append("Actual: " + (actual ?: missing))
                     },
                     cause = cause,
                 )

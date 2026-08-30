@@ -1,13 +1,10 @@
 name: device
 
-# Instrumented tests on real emulators - the slowest thing we run, so it starts
-# BY HAND: run it once the branch is ready, fix what the four cells report in one
-# go, merge. Skipping it stops being possible once device-ok is required in
-# branch protection: a check that never ran keeps the merge button grey.
-#
-# The APKs are built ONCE and handed to the cells as an artifact. Building them
-# inside each cell cost 3.5-4 minutes four times over, and nothing about that
-# build depends on which emulator the cell runs.
+# Instrumented tests on emulators - the slowest thing we run, so it starts BY
+# HAND: run it once the branch is ready, fix every cell in one go, merge.
+# Skipping it stops working once device-ok is required in branch protection.
+# The APKs are built ONCE and handed over as an artifact - that build has nothing
+# to do with which emulator a cell runs.
 on:
   workflow_dispatch:
   # On main it runs by itself: nobody is waiting there, and a broken merge should
@@ -25,12 +22,10 @@ on:
 permissions: {}
 
 concurrency:
-  # By ref, so a new push to a branch kills the run of the commit it just
-  # replaced - four emulators for twenty minutes each is the most expensive thing
-  # to leave running for nothing. Keying by commit would lose exactly that.
-  # Known and accepted: a manual run and the pull-request run of the SAME commit
-  # get different refs and both proceed. That only happens if someone starts by
-  # hand a run that already started itself, and the second result wins.
+  # By ref, so a new push kills the run of the commit it replaced - a matrix of
+  # idle emulators is the priciest thing to leave running. Keying by commit would
+  # lose that. Accepted: a manual run and the PR run of the same commit get
+  # different refs and both proceed; the later result wins.
   group: device-${{ github.ref }}
   cancel-in-progress: true
 
@@ -38,10 +33,13 @@ env:
   # Pinned like every action here; the archive comes from the project's own
   # GitHub releases over https.
   MARATHON_VERSION: "0.10.5"
+  # Must match the length of the shard axis below - Marathon needs to know how
+  # many pieces the suite was cut into.
+  SHARD_COUNT: "2"
 
 jobs:
-  # Build once, test four times. This job never sees an emulator, and the cells
-  # below never see Gradle.
+  # Build once, test in every cell. This job never sees an emulator, and the
+  # cells below never see Gradle.
   apks:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -105,14 +103,17 @@ jobs:
       matrix:
         # Both axes broke us, independently: old and new API failed for
         # different reasons (it was 25 and 36; we test 24 as the minSdk floor),
-        # and a wide screen hung the run because the app did not fit. Hence the
-        # full 2x2 - the pair that hurt was old API AND wide screen.
+        # and a wide screen hung the run because the app did not fit. Hence both
+        # axes in full - the pair that hurt was old API AND wide screen.
         api: [24, 36]
         device:
           - profile: Nexus 5X
             label: phone-portrait
           - profile: pixel_c
             label: tablet-landscape
+        # Last axis on purpose: it varies fastest, so both shards of one device
+        # sit next to each other in the run list instead of being scattered.
+        shard: [0, 1]
     steps:
       # For the Marathonfile only - nothing here is compiled.
       - name: Check out
@@ -154,6 +155,9 @@ jobs:
       # "No android SDK path specified".
       - name: Instrumented tests
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          MARATHON_FRAGMENT_INDEX: ${{ matrix.shard }}
+          MARATHON_FRAGMENT_COUNT: ${{ env.SHARD_COUNT }}
         with:
           api-level: ${{ matrix.api }}
           profile: ${{ matrix.device.profile }}
@@ -170,7 +174,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: device-reports-api${{ matrix.api }}-${{ matrix.device.label }}
+          name: device-reports-api${{ matrix.api }}-${{ matrix.device.label }}-shard${{ matrix.shard }}
           path: marathon-report/**
           retention-days: 7
 

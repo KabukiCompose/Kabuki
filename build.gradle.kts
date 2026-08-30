@@ -24,9 +24,8 @@ val repoUrl = "https://github.com/KabukiCompose/Kabuki"
 subprojects {
     apply(plugin = "dev.detekt")
 
-    // Reports without blocking, until the rule set is tuned: out of the box detekt
-    // flags @Composable naming and our deliberate broad catches, and a build that
-    // is red for reasons everybody ignores teaches people to ignore it.
+    // BLOCKS the build on any finding - measured, one over-long line fails it.
+    // Thresholds live in config/detekt/detekt.yml, each with its reason.
     extensions.configure<dev.detekt.gradle.extensions.DetektExtension> {
         config.setFrom(rootProject.file("config/detekt/detekt.yml"))
         buildUponDefaultConfig = true

@@ -9,6 +9,7 @@ complexity:
   # splitting it would scatter the API a reader has to hold in one place.
   LargeClass:
     allowedLines: 900
+  # Same class, same reason: one operation per method, all in one place.
   TooManyFunctions:
     allowedFunctionsPerFile: 40
     allowedFunctionsPerClass: 40
@@ -55,12 +56,17 @@ style:
   # has a default. Turning them into open classes would lose that.
   AbstractClassCanBeConcreteClass:
     active: false
+  # 130, not 120: failure messages are long interpolated strings, and a tighter
+  # budget makes people CUT the message instead of wrapping the line - caught
+  # exactly that in UiNode on 2026-08-30.
   MaxLineLength:
     maxLineLength: 130
   # Guard clauses ARE the readable form: rule out what disqualifies the input,
   # then do the work. Counting them as complexity pushes code the other way.
   ReturnCount:
     excludeGuardClauses: true
+  # The retry layer has three honest exits in one function: a usage error, an
+  # empty-scene verdict, a timeout with a tree dump.
   ThrowsCount:
     max: 3
     excludeGuardClauses: true

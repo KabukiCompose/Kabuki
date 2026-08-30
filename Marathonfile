@@ -14,12 +14,14 @@ retryStrategy:
   totalAllowedRetryQuota: 0
   retryPerTestQuota: 0
 
-# Batches keep one instrumentation process alive across several tests. One test
-# per batch is the safest and the slowest - cashbox does that for 1600 tests,
-# where isolation is worth more. With 141 the trade goes the other way.
+# One instrumentation launch for everything: each batch costs another launch
+# (measured 2026-08-30 - batches of 10 turned 141 tests into 440 seconds instead
+# of 150). Batching spreads tests across DEVICES, and a cell has exactly one.
+# The price is state shared between tests, and Kabuki keeps none. An app WITH
+# singletons needs smaller batches - do not copy this number blindly.
 batchingStrategy:
   type: "fixed-size"
-  size: 10
+  size: 500
 
 # A test that stops answering fails the batch instead of hanging the job. Ours
 # finish in seconds - five minutes means something is truly stuck.
@@ -34,3 +36,14 @@ vendorConfiguration:
     # The sample: a real application plus the APK that tests it.
     - application: "apks/sample-debug.apk"
       testApplication: "apks/sample-debug-androidTest.apk"
+
+# Sharding across MACHINES, not devices: each cell runs one fragment on its own
+# emulator. Values come from the workflow - see the shard axis in device.yml.
+# Verified 2026-08-30 on the real APKs: four fragments covered all 141 tests, no
+# duplicates, and the split is per TEST - one class lands in several fragments.
+# Counts differ by up to ~20%: the algorithm balances the run, not the count.
+filteringConfiguration:
+  allowlist:
+    - type: "fragmentation"
+      index: ${MARATHON_FRAGMENT_INDEX}
+      count: ${MARATHON_FRAGMENT_COUNT}
