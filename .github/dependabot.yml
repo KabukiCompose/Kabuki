@@ -22,33 +22,41 @@ updates:
       composite-actions:
         patterns: ["*"]
 
-  # The version catalog. Grouped on purpose - a Kotlin bump is never alone, the
-  # compiler, the Compose plugin and AGP move together and have to be reviewed
-  # as one change.
+  # The version catalog, split in two on purpose. The toolchain moves as one
+  # piece - compiler, Compose plugin and AGP are a single decision and a single
+  # review. Everything else is independent, and putting it in the same pull
+  # request makes a two-line library bump wait for an AGP major.
   - package-ecosystem: gradle
     directory: /
     schedule:
       interval: monthly
     groups:
-      gradle:
-        patterns: ["*"]
-
-  # consumer-check is a separate Gradle build, invisible to the entry above.
-  - package-ecosystem: gradle
-    directory: /consumer-check
-    schedule:
-      interval: monthly
-    groups:
-      consumer:
+      toolchain:
+        patterns:
+          # Kotlin artifacts and Kotlin plugin markers, but NOT kotlinx: the
+          # coroutines live under org.jetbrains.kotlinx and are an ordinary
+          # library that has no business waiting for a compiler bump.
+          - "org.jetbrains.kotlin:*"
+          - "org.jetbrains.kotlin.*"
+          - "org.jetbrains.compose*"
+          - "com.android*"
+          # Dependabot calls the Gradle distribution this. A Gradle major is a
+          # migration like the rest of this group, not a version bump.
+          - "gradle-wrapper"
+      libraries:
         patterns: ["*"]
     ignore:
-      # The one thing Dependabot could raise here is the Kotlin plugin version,
-      # and it must not: this build is deliberately on the OLDEST Kotlin we
-      # support, which is the whole check. Names are groupId:artifactId, and a
-      # Gradle plugin appears under its marker coordinates - hence two patterns.
-      - dependency-name: org.jetbrains.kotlin:*
-      - dependency-name: org.jetbrains.kotlin.jvm:*
-      # Kabuki itself comes from mavenLocal, published by the job right before.
-      # There is no registry version to find, and there should not be - the
-      # point is to check the build we just made.
-      - dependency-name: io.github.kabukicompose:*
+      # AGP 9 refuses our plugin layout outright, and Gradle 9 comes with it.
+      # Both are work to be scheduled, not updates to be reviewed monthly -
+      # remove these two entries on the day that work starts.
+      - dependency-name: "com.android*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "gradle-wrapper"
+        update-types: ["version-update:semver-major"]
+
+  # consumer-check is NOT listed here, and that is the point: there is nothing in
+  # it to update. Its Kotlin is pinned to the oldest version we support - raising
+  # it deletes the check instead of maintaining it - and Kabuki itself comes from
+  # mavenLocal, published by the job right before. An ignore list was tried and
+  # missed: Dependabot names that plugin `jvm`, not by its marker coordinates.
+  # Security alerts do not depend on this file, so nothing is lost.
