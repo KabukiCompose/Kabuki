@@ -30,6 +30,12 @@ env:
   # Pinned like every action here; the archive comes from the project's own
   # GitHub releases over https.
   MARATHON_VERSION: "0.10.5"
+  # The tablet profile draws 2560x1800 through a software renderer, and on API 24
+  # the defaults (384m of dalvik heap) leave the system too little to start an
+  # activity - that cell died five runs in a row. Set in ONE place: a snapshot
+  # remembers the machine it was taken on, so creation and use must agree.
+  EMULATOR_RAM: "4096M"
+  EMULATOR_HEAP: "512M"
 
 jobs:
   # Build once, test in every cell. This job never sees an emulator, and the
@@ -225,7 +231,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-v2-${{ matrix.api }}-${{ matrix.label }}
+          key: avd-v3-${{ matrix.api }}-${{ matrix.label }}
 
       # ONE cell per configuration builds the snapshot, and the same one saves it.
       # Every shard shares the key, so they all miss together - letting each of
@@ -243,6 +249,8 @@ jobs:
           profile: ${{ matrix.profile }}
           arch: x86_64
           force-avd-creation: false
+          ram-size: ${{ env.EMULATOR_RAM }}
+          heap-size: ${{ env.EMULATOR_HEAP }}
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
           # A snapshot freezes the system exactly as it is. Taken the moment the
@@ -272,7 +280,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-v2-${{ matrix.api }}-${{ matrix.label }}
+          key: avd-v3-${{ matrix.api }}-${{ matrix.label }}
 
       # Everything this step does before Marathon belongs to somebody else: an SDK
       # package that arrives corrupted, an emulator that will not boot, adb
@@ -286,6 +294,8 @@ jobs:
           profile: ${{ matrix.profile }}
           shard: ${{ matrix.shard }}
           shards: ${{ matrix.shards }}
+          ram: ${{ env.EMULATOR_RAM }}
+          heap: ${{ env.EMULATOR_HEAP }}
 
       # Marathon writes its report as it goes, so a report holding no files at
       # all proves the tests never ran and the failure was not ours. A FAILING
@@ -312,6 +322,8 @@ jobs:
           profile: ${{ matrix.profile }}
           shard: ${{ matrix.shard }}
           shards: ${{ matrix.shards }}
+          ram: ${{ env.EMULATOR_RAM }}
+          heap: ${{ env.EMULATOR_HEAP }}
 
       # Without this the cell would go green on a red suite: continue-on-error
       # above swallows the failure, and the retry deliberately skips this case.

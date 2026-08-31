@@ -20,6 +20,12 @@ inputs:
   shards:
     description: Number of fragments the suite is split into.
     required: true
+  ram:
+    description: RAM for the emulator.
+    required: true
+  heap:
+    description: Dalvik heap for the emulator.
+    required: true
 
 runs:
   using: composite
@@ -37,6 +43,9 @@ runs:
         arch: x86_64
         # Reuse the cached AVD and its snapshot, and do not write a new one.
         force-avd-creation: false
+        # Must match what the snapshot was taken with - see device.yml.
+        ram-size: ${{ inputs.ram }}
+        heap-size: ${{ inputs.heap }}
         # Animations fight the test runner; the rest is a headless emulator.
         emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
