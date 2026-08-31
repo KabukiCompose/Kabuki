@@ -19,6 +19,7 @@ coroutines = "1.10.2"
 binaryCompatibilityValidator = "0.18.1"
 detekt = "2.0.0-alpha.6"
 composeRules = "0.6.4"
+mavenPublish = "0.37.0"
 androidxTestRunner = "1.7.0"
 # Only a constraint in kabuki-core: the transitive 3.5.0 breaks on Android 16.
 androidxEspresso = "3.7.0"
@@ -47,3 +48,4 @@ androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
