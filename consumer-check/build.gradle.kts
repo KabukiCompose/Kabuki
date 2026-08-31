@@ -3,6 +3,10 @@ plugins {
     // newer compiler but carry metadata 2.2 and stdlib 2.2 - forget
     // coreLibrariesVersion at home and half the users cannot read us.
     kotlin("jvm") version "2.2.0"
+    kotlin("android") version "2.2.0" apply false
+    // Versions are pinned by hand and stay behind on purpose: a consumer does not
+    // upgrade because we did, and this build exists to be that consumer.
+    id("com.android.library") version "8.13.2" apply false
 }
 
 dependencies {
