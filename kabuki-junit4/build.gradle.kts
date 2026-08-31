@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    `maven-publish`
+    alias(libs.plugins.mavenPublish)
 }
 
 description = "Kabuki on top of an existing ComposeTestRule - for adopting it one test at a time"

@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    `maven-publish`
+    alias(libs.plugins.mavenPublish)
 }
 
 description = "Desktop and Android runners for Kabuki: one test, both platforms"

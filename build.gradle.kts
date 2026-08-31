@@ -40,7 +40,8 @@ subprojects {
 allprojects {
     // Namespace verified through the KabukiCompose GitHub org - no domain needed.
     group = "io.github.kabukicompose"
-    version = "0.1.0-SNAPSHOT"
+    // The version is NOT here: it lives in gradle.properties, so cutting a
+    // release edits one line of configuration instead of a build script.
 
     // Keyed by project PATH, not name: same-named modules in different groups
     // would otherwise share one build directory.
@@ -50,6 +51,15 @@ allprojects {
     // do not have to rely on the POM.
     tasks.withType<Jar>().configureEach {
         metaInf.from(rootProject.file("LICENSE"))
+    }
+
+    // An AAR is assembled by AGP, so the hook above never sees it. This one hangs
+    // on AGP's own task, which AGP calls an implementation detail: WHOEVER RAISES
+    // AGP, unzip a published .aar and check META-INF/LICENSE is still there.
+    plugins.withId("com.android.library") {
+        tasks.withType<com.android.build.gradle.tasks.BundleAar>().configureEach {
+            from(rootProject.file("LICENSE")) { into("META-INF") }
+        }
     }
 
     // Desktop tests can mirror the scene into a real window. Off unless asked for -
@@ -124,8 +134,8 @@ apiValidation {
 
 /**
  * POM fields Maven Central requires - a bundle without them is rejected, and
- * plain maven-publish fills in none of them. The description comes from
- * `project.description`, set by each module.
+ * nothing fills them in by itself. Written here rather than in the plugin's POM_*
+ * properties because each module has its own `project.description`.
  */
 fun MavenPom.kabukiMetadata(project: Project, repoUrl: String) {
     name.set(project.name)

@@ -46,13 +46,19 @@ updates:
       libraries:
         patterns: ["*"]
     ignore:
-      # AGP 9 refuses our plugin layout outright, and Gradle 9 comes with it.
-      # Both are work to be scheduled, not updates to be reviewed monthly -
-      # remove these two entries on the day that work starts.
+      # For a LIBRARY, AGP 9 is not a version bump: it refuses our plugin layout,
+      # and it makes our compileSdk a floor for consumers. Staying on AGP 8 is the
+      # same decision as metadata 2.2 and Java 11 bytecode - build with the old
+      # thing so that many can read us. Gradle 9 comes along for the ride.
       - dependency-name: "com.android*"
         update-types: ["version-update:semver-major"]
       - dependency-name: "gradle-wrapper"
         update-types: ["version-update:semver-major"]
+      # Compose 1.12 is a MINOR that demands AGP 9.1, so it cannot land before that
+      # migration - and it would hold every Kotlin update in the same red PR.
+      # Lift together with the AGP entries above.
+      - dependency-name: "org.jetbrains.compose*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
   # consumer-check is NOT listed here, and that is the point: there is nothing in
   # it to update. Its Kotlin is pinned to the oldest version we support - raising
