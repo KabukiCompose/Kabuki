@@ -21,11 +21,11 @@ inputs:
     description: Number of fragments the suite is split into.
     required: true
   ram:
-    description: RAM for the emulator.
-    required: true
+    description: RAM for the emulator; empty keeps the profile's default.
+    required: false
   heap:
-    description: Dalvik heap for the emulator.
-    required: true
+    description: Dalvik heap for the emulator; empty keeps the default.
+    required: false
 
 runs:
   using: composite
