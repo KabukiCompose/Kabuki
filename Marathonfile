@@ -13,6 +13,14 @@ retryStrategy:
   totalAllowedRetryQuota: 0
   retryPerTestQuota: 0
 
+# A test that reports NO status is a different animal from a failing one: the
+# process carrying it died. Marathon puts those back in the queue FOREVER by
+# default, so a cell can spin until the job timeout instead of telling anyone.
+# Six total attempts, because a real recovery has been seen on the fifth. The
+# cost of the last resort is bounded too: a hung attempt is cut by
+# testOutputTimeoutMillis above, so six of them fit inside the job timeout.
+uncompletedTestRetryQuota: 6
+
 # One instrumentation launch for everything: each batch costs another launch, and
 # small batches cost several minutes per cell. Batching spreads tests across
 # DEVICES, and a cell has exactly one. The price is state shared between tests,
