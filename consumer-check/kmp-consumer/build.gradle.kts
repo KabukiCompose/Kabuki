@@ -26,9 +26,8 @@ kotlin {
     }
 }
 
-// Not checked here: metadata variants. One target means KGP skips
-// compileKotlinMetadata - commonMain compiles inside the only platform. The
-// second target Kabuki publishes is Android, and it brings AGP's JDK 17 floor,
-// the thing the JDK 11 cell checks against. Metadata that is too new is caught
-// anyway - it lives in the class files the plain JVM module reads.
-// When iOS or wasm arrives, add it here and restore the dependency.
+// One target on purpose: adding Android here would drag AGP in, and AGP refuses
+// the JDK 11 this build also runs on. The AARs are checked by :android-consumer
+// instead. The cost is that metadata variants stay unchecked - with a single
+// target KGP skips compileKotlinMetadata. Add a target here when iOS or wasm
+// arrives; that is what makes the metadata compile real.
