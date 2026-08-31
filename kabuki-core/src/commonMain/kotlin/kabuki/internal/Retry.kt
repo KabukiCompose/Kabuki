@@ -57,7 +57,11 @@ internal fun KabukiTestScope.runOperation(
         config.notifyFailure(e) { onOperationFinish(info, failure) }
         throw e
     } finally {
-        watchdog?.cancel()
+        // cancel(null), not cancel(): the argument-less form goes through a
+        // synthetic cancel$default, and coroutines 1.11 moved that one out of
+        // Job$DefaultImpls into the interface. Built against one version, run
+        // against the other - NoSuchMethodError.
+        watchdog?.cancel(null)
     }
 
     val success = OperationResult.Succeeded(attempts, started.elapsedNow())
