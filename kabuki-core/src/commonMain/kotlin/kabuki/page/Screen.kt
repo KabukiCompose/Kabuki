@@ -8,19 +8,25 @@ import kabuki.internal.CurrentTestScope
  * Page object of a logical screen. Declares its elements as properties:
  *
  * ```kotlin
- * class LoginScreen : Screen<LoginScreen>() {
+ * object LoginScreen : Screen<LoginScreen>() {
  *     override val root = node { withTag(LoginTags.SCREEN) }
  *     val loginButton = node { withTag(LoginTags.LOGIN_BUTTON) }
  * }
  * ```
  *
- * `onScreen<LoginScreen> { }` creates the instance and binds it to the test, so a
- * screen needs a public no-arg constructor.
+ * Entered as `LoginScreen { loginButton.click() }` - see [invoke]. There is one way
+ * in and it needs no reflection, so a screen needs no keep rule under R8 and the
+ * same page object works on every platform Kabuki runs on.
+ *
+ * Declaring a screen as an `object` is the norm: parameters belong on the node
+ * accessors (`fun card(id: String) = node(Tags.CARD, id)`), not on a constructor.
+ * A screen that genuinely needs constructor parameters is entered through a local:
+ * `val screen = LoginScreen(token); screen { }`.
  */
 public abstract class Screen<T : Screen<T>> : NodeHost() {
 
     /**
-     * The screen's root - `onScreen` waits for it to be displayed. Optional.
+     * The screen's root - entering the screen waits for it to be displayed. Optional.
      *
      * It does NOT scope the screen's other nodes: dialogs, dropdowns and popups are
      * drawn outside the screen's subtree yet belong to the same page object. Tag
@@ -32,16 +38,15 @@ public abstract class Screen<T : Screen<T>> : NodeHost() {
     /**
      * Enters the screen: `PlaybillScreen { card("chushingura").click() }`.
      *
-     * Same as `onScreen(PlaybillScreen) { }`: binds the screen to the test running
-     * on this thread and waits for [root]. Needs neither reflection nor a keep rule,
-     * which is what makes an `object` screen work. On an instance already entered in
-     * this test it is just a scoped block.
+     * The only way in. Binds the screen to the test running on this thread and waits
+     * for [root]. Needs neither reflection nor a keep rule, which is what lets the
+     * same call work on every platform. On an instance already entered in this test
+     * it is just a scoped block.
      */
     public operator fun invoke(block: T.() -> Unit) {
         val current = CurrentTestScope.get() ?: throw KabukiUsageError(
             "${this::class.simpleName} { } needs a running Kabuki test on this thread - " +
-                "use it inside runKabukiTest { }, or enter the screen explicitly with " +
-                "onScreen(${this::class.simpleName}) { }.",
+                "use it inside runKabukiTest { }.",
         )
         if (bindingOrNull() !== current) {
             enter(current)
@@ -50,16 +55,17 @@ public abstract class Screen<T : Screen<T>> : NodeHost() {
         (this as T).block()
     }
 
-    /** Binds the screen to [scope] and waits for [root]. Shared with `onScreen`. */
+    /**
+     * Binds the screen to [scope] and waits for [root].
+     *
+     * No finished-test check here: [invoke] is the only caller and it takes the
+     * scope from the thread, where a finished test is never published. Acting on a
+     * page object AFTER its test is still refused - by the operation itself, which
+     * is the reachable path and has its own test.
+     */
     internal fun enter(scope: KabukiTestScope) {
-        if (scope.isFinished) {
-            throw KabukiUsageError(
-                "${this::class.simpleName} cannot be entered: the test it belongs to has already " +
-                    "finished. Enter the screen inside the test that uses it.",
-            )
-        }
         bind(scope)
-        scope.log("onScreen: ${this::class.simpleName}")
+        scope.log("screen: ${this::class.simpleName}")
         root?.assertIsDisplayed()
     }
 }

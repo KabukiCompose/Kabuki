@@ -6,7 +6,6 @@ import kabuki.listener.KabukiListener
 import kabuki.listener.TestInfo
 import kabuki.listener.TestResult
 import kabuki.page.Screen
-import kabuki.page.onScreen
 import kabuki.runner.selftest.SelfTestCase
 import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
@@ -26,9 +25,9 @@ class ObjectScreenSelfTest : SelfTestCase() {
     @Test
     fun anObjectScreenWorksWithoutBeingInstantiated() {
         runTest(name = "object screen") {
-            // No reflection involved, unlike onScreen<T>() - which also means no
-            // keep rules are needed for it under R8.
-            onScreen(ObjectProbeScreen) {
+            // No reflection anywhere on this path, which is also why a screen
+            // needs no keep rule under R8.
+            ObjectProbeScreen {
                 title.assertTextEquals("Kabuki SelfTest")
             }
         }
@@ -37,7 +36,7 @@ class ObjectScreenSelfTest : SelfTestCase() {
     @Test
     fun anotherThreadDoesNotSeeTheBinding() {
         runTest(name = "binding is per thread") {
-            onScreen(ObjectProbeScreen) { title.assertExists() }
+            ObjectProbeScreen { title.assertExists() }
 
             var failure: Throwable? = null
             val other = Thread {
@@ -60,15 +59,15 @@ class ObjectScreenSelfTest : SelfTestCase() {
     }
 
     @Test
-    fun everyCallFormWorksOnTheSameObjectScreenInOneTest() {
-        runTest(name = "all three forms") {
-            step("reified onScreen - reads the singleton instead of calling its constructor") {
-                onScreen<ObjectProbeScreen> { title.assertTextEquals("Kabuki SelfTest") }
+    fun theSameObjectScreenCanBeEnteredSeveralTimesInOneTest() {
+        runTest(name = "repeated entry") {
+            // The second entry must NOT re-enter: the screen is already bound to this
+            // test, so it is a plain scoped block. Re-entering would wait for the root
+            // again and charge every later call for it.
+            step("first entry") {
+                ObjectProbeScreen { title.assertTextEquals("Kabuki SelfTest") }
             }
-            step("onScreen with the instance") {
-                onScreen(ObjectProbeScreen) { title.assertTextEquals("Kabuki SelfTest") }
-            }
-            step("short form - no reflection at all") {
+            step("second entry on the same singleton") {
                 ObjectProbeScreen { title.assertTextEquals("Kabuki SelfTest") }
             }
         }
@@ -84,22 +83,6 @@ class ObjectScreenSelfTest : SelfTestCase() {
         assertTrue(
             "needs a running Kabuki test" in error.message.orEmpty(),
             "The message must name what is missing: ${error.message}",
-        )
-    }
-
-    @Test
-    fun aScreenCannotBeEnteredWithAScopeFromAFinishedTest() {
-        var finished: KabukiTestScope? = null
-        runTest(name = "capture the scope") { finished = this }
-
-        // Keeping the scope and reusing it later is the one way to reach a
-        // finished test - and it must be refused, not acted upon.
-        val error = assertFailsWith<KabukiUsageError> {
-            finished!!.onScreen(ObjectProbeScreen) { title.assertExists() }
-        }
-        assertTrue(
-            "has already finished" in error.message.orEmpty(),
-            "The refusal must name the reason: ${error.message}",
         )
     }
 
@@ -131,7 +114,7 @@ class ObjectScreenSelfTest : SelfTestCase() {
                 listeners += ExplodingFinishListener()
             },
         ) {
-            onScreen(ObjectProbeScreen) { title.assertExists() }
+            ObjectProbeScreen { title.assertExists() }
 
             // Reporting the end of the test from here, the way a runner does. With
             // strictListeners the broken listener throws out of it - and the cleanup
@@ -167,23 +150,9 @@ class ObjectScreenSelfTest : SelfTestCase() {
     }
 
     @Test
-    fun aSingletonIsNeverDuplicatedThroughItsPrivateConstructor() {
-        // Stands for an `object` whose INSTANCE field is gone (minified away): the
-        // only remaining way in is the private constructor, and taking it would
-        // silently produce a second instance of a singleton.
-        val error = assertFailsWith<IllegalArgumentException> {
-            runTest(name = "private constructor") { onScreen<PrivateConstructorScreen> { } }
-        }
-        assertTrue(
-            "INSTANCE" in error.message.orEmpty(),
-            "The refusal must point at the missing INSTANCE field: ${error.message}",
-        )
-    }
-
-    @Test
     fun theBindingIsDroppedWhenTheTestEnds() {
         runTest(name = "first test enters the object screen") {
-            onScreen(ObjectProbeScreen) { title.assertExists() }
+            ObjectProbeScreen { title.assertExists() }
         }
 
         val error = assertFailsWith<IllegalStateException> {
@@ -223,11 +192,6 @@ private class ExplodingFinishListener : KabukiListener {
  * to run even when the guard it checks is broken.
  */
 private object RootlessObjectScreen : Screen<RootlessObjectScreen>() {
-    val title = node(SelfTestTags.TITLE)
-}
-
-/** A singleton without an INSTANCE field - what R8 can leave behind. */
-private class PrivateConstructorScreen private constructor() : Screen<PrivateConstructorScreen>() {
     val title = node(SelfTestTags.TITLE)
 }
 

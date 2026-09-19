@@ -12,7 +12,7 @@ import kabuki.sample.ui.SeatTags
  * of view - it has a root and elements of its own. Seat rows are a lazy list
  * inside a modal - itemAt scrolls to off-screen rows.
  */
-class SeatPickerDialog : Screen<SeatPickerDialog>() {
+object SeatPickerDialog : Screen<SeatPickerDialog>() {
 
     override val root = node { withTag(SeatTags.DIALOG) }
 
@@ -39,7 +39,7 @@ class SeatRowItem(scope: ListItemScope) : ListItem(scope) {
     }
 }
 
-class PurchaseConfirmDialog : Screen<PurchaseConfirmDialog>() {
+object PurchaseConfirmDialog : Screen<PurchaseConfirmDialog>() {
 
     override val root = node { withTag(ConfirmTags.DIALOG) }
 

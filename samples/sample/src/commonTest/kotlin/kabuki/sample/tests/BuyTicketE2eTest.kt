@@ -1,6 +1,5 @@
 package kabuki.sample.tests
 
-import kabuki.page.onScreen
 import kabuki.sample.model.Genre
 import kabuki.sample.runner.runTheaterTest
 import kabuki.sample.scenarios.BuyTicketScenario
@@ -29,7 +28,7 @@ class BuyTicketE2eTest {
         holdPlaybill = true,
     ) { app ->
         step("Playbill: shimmers first (all six), then cards arrive") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 shimmer.assertIsDisplayed()
                 // Two different questions: how many placeholders are on screen
                 // (a phone composes fewer than a desktop window) and how many
@@ -52,10 +51,10 @@ class BuyTicketE2eTest {
         }
 
         step("The ticket is visible on the tickets screen as a typed list item") {
-            onScreen<PerformanceScreen> {
+            PerformanceScreen {
                 navBar.ticketsTab.click()
             }
-            onScreen<TicketsScreen> {
+            TicketsScreen {
                 navBar { ticketsTab.assertIsSelected() }
                 tickets {
                     assertLengthEquals(1)
@@ -78,7 +77,7 @@ class BuyTicketE2eTest {
         }
 
         step("Pick 'Kids' in the dropdown - only the kids play remains") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 filterByGenre(Genre.KIDS)
                 card("momotaro").assertIsDisplayed()
                 card("chushingura").assertDoesNotExist()

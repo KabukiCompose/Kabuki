@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import kabuki.KabukiAssertionError
 import kabuki.page.Screen
 import kabuki.page.UiNode
-import kabuki.page.onScreen
 import kabuki.runner.WindowMode
 import kabuki.runner.runDesktopTest
 import kabuki.semantics.testTag
@@ -104,7 +103,7 @@ class TagParamsSelfTest {
         // The page object path goes through the matcher builder, not through
         // scope.node(...) - diagnostics must survive it
         val error = assertFailsWith<KabukiAssertionError> {
-            onScreen<GridScreen> {
+            GridScreen {
                 cell(row = 1, column = 3).assertIsDisplayed()
             }
         }
@@ -140,7 +139,7 @@ class TagParamsSelfTest {
 }
 
 /** Page object over the grid - the path most users take. */
-class GridScreen : Screen<GridScreen>() {
+object GridScreen : Screen<GridScreen>() {
 
     override val root = node(GridTags.GRID)
 

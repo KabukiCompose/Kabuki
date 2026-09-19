@@ -42,7 +42,7 @@ fun PlaybillScreen(modifier: Modifier = Modifier, performances: List<Performance
 Экран описывается один раз:
 
 ```kotlin
-class PlaybillScreen : Screen<PlaybillScreen>() {
+object PlaybillScreen : Screen<PlaybillScreen>() {
     override val root = node(PlaybillTags.SCREEN)
 
     val cards = lazyList(PlaybillTags.LIST) { itemType(::PerformanceCardItem) }
@@ -64,7 +64,7 @@ fun buyTicket() = runKabukiTest(name = "Buy a ticket") {
     setContent { TheaterApp(state) }
 
     step("The playbill is loaded") {
-        onScreen<PlaybillScreen> {
+        PlaybillScreen {
             cards.assertLengthEquals(6)
             cards.firstItem<PerformanceCardItem> {
                 title.assertTextContains("Chushingura")

@@ -41,8 +41,12 @@ class InteropSelfTest : KabukiInterop {
     @get:Rule
     val composeRule = createComposeRule()
 
-    // The mixin field: one line in a base class, flat onScreen<> in every test
-    override val kabukiScope by lazy { composeRule.kabukiScope() }
+    // The mixin field: one line in a base class, flat screen calls in every test.
+    // Eager on purpose. Creating the scope is what publishes this test to the
+    // thread, and a screen looks for it there - `by lazy` that no test reads would
+    // leave the first `MiniScreen { }` without a test to attach to. JUnit builds a
+    // fresh instance per test method, so each test gets its own scope.
+    override val kabukiScope = composeRule.kabukiScope()
 
     @Composable
     private fun MiniApp() {
@@ -83,10 +87,10 @@ class InteropSelfTest : KabukiInterop {
     }
 
     @Test
-    fun flatOnScreenOnRule() {
+    fun theFlatScreenFormOnAForeignRule() {
         composeRule.setContent { MiniApp() }
 
-        composeRule.onScreen<MiniScreen> {
+        MiniScreen {
             button.click()
             counter.assertTextContains("Clicks: 1")
         }
@@ -134,11 +138,11 @@ class InteropSelfTest : KabukiInterop {
     }
 
     @Test
-    fun flatOnScreenViaMixin() {
+    fun theFlatScreenFormViaTheMixin() {
         composeRule.setContent { MiniApp() }
 
         // Flat call with no receiver - the KakaoCup migration ergonomics
-        onScreen<MiniScreen> {
+        MiniScreen {
             button.click()
             button.click()
             counter.assertTextContains("Clicks: 2")
@@ -160,7 +164,7 @@ private class TestEventRecorder : KabukiListener {
     }
 }
 
-class MiniScreen : Screen<MiniScreen>() {
+object MiniScreen : Screen<MiniScreen>() {
     override val root = node { withTag("mini_screen") }
     val button = node { withTag("mini_button") }
     val counter = node { withTag("mini_counter") }

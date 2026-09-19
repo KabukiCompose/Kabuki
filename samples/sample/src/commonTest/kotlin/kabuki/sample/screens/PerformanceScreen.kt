@@ -6,9 +6,9 @@ import kabuki.sample.ui.PerformanceTags
 
 /**
  * Performance details. The root appears only after the loader finishes -
- * `onScreen<PerformanceScreen>` waits for it, no manual waiting needed.
+ * entering the screen waits for it, no manual waiting needed.
  */
-class PerformanceScreen : Screen<PerformanceScreen>() {
+object PerformanceScreen : Screen<PerformanceScreen>() {
 
     override val root = node { withTag(PerformanceTags.SCREEN) }
 

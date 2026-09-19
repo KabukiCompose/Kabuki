@@ -1,7 +1,6 @@
 package consumer.android
 
 import kabuki.page.Screen
-import kabuki.page.onScreen
 import kabuki.runner.KabukiTestCase
 import kabuki.runner.runKabukiTest
 
@@ -10,7 +9,7 @@ import kabuki.runner.runKabukiTest
  * it answers whether kabuki-runner's AAR resolves and its API is reachable from
  * an androidTest source set, which is where every Android project puts it.
  */
-private class AndroidScreen : Screen<AndroidScreen>() {
+private object AndroidScreen : Screen<AndroidScreen>() {
     override val root = node(AndroidTags.SCREEN)
     val row = node(AndroidTags.ROW, "row", 1)
 }
@@ -19,7 +18,7 @@ private class AndroidScreen : Screen<AndroidScreen>() {
 private fun instrumentedTestCompiles(): () -> Unit {
     return {
         runKabukiTest(name = "android consumer") {
-            onScreen<AndroidScreen> {
+            AndroidScreen {
                 root.assertIsDisplayed()
                 row.assertIsDisplayed()
             }

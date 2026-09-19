@@ -2,7 +2,6 @@ package kabuki.sample.tests
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import kabuki.page.onScreen
 import kabuki.sample.runner.runTheaterTest
 import kabuki.sample.screens.PerformanceScreen
 import kabuki.sample.screens.PlaybillScreen
@@ -29,13 +28,13 @@ class SearchAndProbesE2eTest {
         name = "Find a review by its author",
     ) {
         step("Open a performance") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 card("chushingura").click()
             }
         }
 
         step("Open the reviews and make sure the dialog really opened") {
-            onScreen<PerformanceScreen> {
+            PerformanceScreen {
                 reviewsButton.scrollTo()
                 // The click counts as done only once the modal is up: on a slow
                 // device the first tap can land while the screen is still settling.
@@ -45,7 +44,7 @@ class SearchAndProbesE2eTest {
             }
         }
 
-        onScreen<ReviewsDialog> {
+        ReviewsDialog {
             step("The review is found by its author, wherever it sits in the list") {
                 reviews.itemWhere<ReviewItem>({ withText("Ren 26") }) {
                     // The author, not just "some review": a search that returned any
@@ -67,15 +66,15 @@ class SearchAndProbesE2eTest {
         name = "Probe and read the reviews",
     ) {
         step("Open the reviews") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 card("chushingura").click()
             }
-            onScreen<PerformanceScreen> {
+            PerformanceScreen {
                 openReviews()
             }
         }
 
-        onScreen<ReviewsDialog> {
+        ReviewsDialog {
             step("Asking whether a 99th review exists must not fail the test") {
                 val hasNinetyNinth = reviews.itemNodeAt(99)
                     .withTimeout(300.milliseconds)

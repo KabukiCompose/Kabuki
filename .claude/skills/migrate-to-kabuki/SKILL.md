@@ -38,9 +38,9 @@ it is written.
          @get:Rule(order = 1) val kabukiRule = KabukiRule(composeRule)
          override val kabukiScope get() = kabukiRule.kabukiScope
      }
-     // in tests, FLAT - the compiler picks the framework by screen type:
-     // onScreen<OldKakaoScreen>(composeRule) { ... }   // legacy stays as is
-     // onScreen<NewKabukiScreen> { ... }                // migrated/new parts
+     // in tests, FLAT and side by side:
+     // onComposeScreen<OldKakaoScreen>(composeRule) { ... }  // legacy stays as is
+     // NewKabukiScreen { ... }                               // migrated/new parts
      ```
      PREFER `KabukiRule` over `kabukiScope by lazy { }`: only a rule knows where
      the test begins and ends, so reporting sees a test (not loose steps), the
@@ -48,9 +48,10 @@ it is written.
      Declare it INSIDE the Compose rule - `order = 1` against `order = 0`, since
      a higher order means inner.
 
-     One-shot calls without a base class: `composeRule.onScreen<T> { }` or
-     `composeRule.kabuki(name = "...") { step(...) { ... } }` - the block form
-     reports the test too.
+     One-shot calls without a base class:
+     `composeRule.kabuki(name = "...") { MyScreen { ... } }` - the block form
+     reports the test too. A screen finds the test on the thread, so the scope
+     has to exist before the first screen call.
 4. Present the migration plan (strategy + batches of related screens) before editing.
 
 ## Step 1: Dependencies
@@ -75,15 +76,19 @@ Do NOT remove the old framework until the last batch is green.
 - `kabuki` - what the test body uses: `KabukiTestScope`, config, `os`/`assume*`,
   `Scenario`, profiles;
 - `kabuki.page` - what a page object is built from: `Screen`, `Component`,
-  `UiNode`, `LazyList`, `ListItem`, `onScreen`;
+  `UiNode`, `LazyList`, `ListItem`;
 - `kabuki.listener` - reporting SPI: `KabukiListener`, `ConsoleListener`, event
   and result types;
 - `kabuki.runner` - what starts a test: `runKabukiTest`, `KabukiTestCase`;
 - `kabuki.semantics` - the only package production code touches: `testTag`,
   `testListItem`, `testListLength`.
 
-So a migrated page object imports `kabuki.page.Screen`, the test imports
-`kabuki.page.onScreen`, and its base class comes from `kabuki.runner`.
+So a migrated page object imports `kabuki.page.Screen` and its base class comes
+from `kabuki.runner`. The test imports nothing extra: a screen is entered by naming
+it - `MyScreen { }` - which is the only entry form and needs no reflection.
+
+Declare page objects as `object`. Parameters belong on the node accessors
+(`fun card(id: String) = node(Tags.CARD, id)`), not on a constructor.
 
 ## Step 2: API mapping tables
 
@@ -93,7 +98,7 @@ So a migrated page object imports `kabuki.page.Screen`, the test imports
 |---|---|
 | `ComposeScreen<T>(semanticsProvider, viewBuilderAction)` | `Screen<T>()` + `override val root = node { ... }` - no provider at all |
 | `val btn: KNode = child { hasTestTag("x") }` | `val btn = node { withTag("x") }` |
-| `onComposeScreen<T>(composeTestRule) { }` | `onScreen<T> { }` (waits for root with retry - drop manual waits before it) |
+| `onComposeScreen<T>(composeTestRule) { }` | `MyScreen { }` on an `object` screen (waits for root with retry - drop manual waits before it) |
 | `btn { performClick() }` | `btn { click() }` |
 | `performTextInput("a")` / `performTextReplacement` / `performTextClearance` | `typeText("a")` / `replaceText` / `clearText` |
 | `assertIsDisplayed()` etc. | same names, but retried until timeout (delete surrounding `waitUntil`/idling workarounds) |
@@ -108,8 +113,8 @@ So a migrated page object imports `kabuki.page.Screen`, the test imports
 Behavioral differences to announce in the final report:
 - Every Kabuki operation retries until timeout - tests that were flaky may start
   passing; manual `waitUntil`/`waitForIdle` calls become dead code, remove them.
-- `onScreen` waits for the root - leading `assertIsDisplayed()` on the first
-  element becomes redundant.
+- Entering a screen waits for its root - a leading `assertIsDisplayed()` on the
+  first element becomes redundant.
 - Failure messages include expected/actual and a semantics tree dump.
 
 ### From Kaspresso (Compose support)
@@ -195,6 +200,6 @@ field is deleted - Kabuki screens are context-free.
 ## Step 4: Final report
 
 Summarize: files migrated, tests passing before/after, deleted wait-hacks count,
-behavioral differences the team should know (retry semantics, onScreen root wait),
+behavioral differences the team should know (retry semantics, root wait on entry),
 and anything left with a TODO (framework-specific features without a Kabuki
 equivalent yet).

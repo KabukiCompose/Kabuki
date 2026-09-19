@@ -48,7 +48,7 @@ class KabukiRuleSelfTest : KabukiInterop {
         composeRule.setContent { MiniRuleApp() }
 
         // Flat call through the mixin - what a migrated base class gives its tests.
-        onScreen<RuleScreen> { text.assertTextContains("Hello") }
+        RuleScreen { text.assertTextContains("Hello") }
 
         // The name comes from JUnit, so no test has to repeat its own name.
         assertEquals(listOf("theRuleNamesTheTestAfterTheJunitMethod"), events.started)
@@ -58,8 +58,8 @@ class KabukiRuleSelfTest : KabukiInterop {
     fun oneScopeServesTheWholeTest() {
         composeRule.setContent { MiniRuleApp() }
 
-        kabukiScope.step("first") { onScreen<RuleScreen> { text.assertExists() } }
-        kabukiScope.step("second") { onScreen<RuleScreen> { text.assertExists() } }
+        kabukiScope.step("first") { RuleScreen { text.assertExists() } }
+        kabukiScope.step("second") { RuleScreen { text.assertExists() } }
 
         // Sequential numbering only happens if both steps went through the SAME
         // scope - a rule that rebuilt it per call would restart at 1.
@@ -70,8 +70,8 @@ class KabukiRuleSelfTest : KabukiInterop {
     fun theShortScreenFormWorksOverAForeignRule() {
         composeRule.setContent { MiniRuleApp() }
 
-        // No onScreen: the object screen asks the thread which test is running,
-        // and under a rule there IS one.
+        // The object screen asks the thread which test is running, and under a
+        // rule there IS one - the rule created the scope before the body started.
         RuleObjectScreen { text.assertTextContains("Hello") }
     }
 
@@ -173,7 +173,7 @@ class EventRecorder : KabukiListener {
     }
 }
 
-private class RuleScreen : Screen<RuleScreen>() {
+private object RuleScreen : Screen<RuleScreen>() {
     override val root = node { withTag("rule_screen") }
     val text = node { withTag("rule_text") }
 }
