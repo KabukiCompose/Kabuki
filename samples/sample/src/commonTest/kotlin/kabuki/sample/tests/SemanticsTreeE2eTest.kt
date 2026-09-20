@@ -1,6 +1,5 @@
 package kabuki.sample.tests
 
-import kabuki.page.onScreen
 import kabuki.sample.runner.runTheaterTest
 import kabuki.sample.screens.PerformanceCardItem
 import kabuki.sample.screens.PlaybillScreen
@@ -18,7 +17,7 @@ class SemanticsTreeE2eTest {
 
     @Test
     fun theTreeRulesHoldOnThisPlatform() = runTheaterTest(name = "Semantics tree rules") {
-        onScreen<PlaybillScreen> {
+        PlaybillScreen {
             step("A tagged card reads the text of its children") {
                 // The tag is on the Card, the texts are in the Text nodes inside it.
                 // In the unmerged tree the card has no text of its own, so this only

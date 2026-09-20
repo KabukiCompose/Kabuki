@@ -1,7 +1,6 @@
 package kabuki.sample.scenarios
 
 import kabuki.Scenario
-import kabuki.page.onScreen
 import kabuki.sample.screens.PerformanceScreen
 import kabuki.sample.screens.PlaybillScreen
 import kabuki.sample.screens.PurchaseConfirmDialog
@@ -17,22 +16,22 @@ fun BuyTicketScenario(
     number: Int,
 ) = Scenario {
     step("Open performance '$performanceId' from the playbill") {
-        onScreen<PlaybillScreen> {
+        PlaybillScreen {
             card(performanceId).click()
         }
     }
 
     step("Open the seat picker") {
-        onScreen<PerformanceScreen> {
+        PerformanceScreen {
             openSeatPicker()
         }
     }
 
     step("Pick row $row seat $number and confirm the purchase") {
-        onScreen<SeatPickerDialog> {
+        SeatPickerDialog {
             seat(row = row, number = number).click()
         }
-        onScreen<PurchaseConfirmDialog> {
+        PurchaseConfirmDialog {
             buyButton.click()
         }
     }

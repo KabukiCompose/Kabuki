@@ -10,8 +10,6 @@ import kabuki.KabukiTestScope
 import kabuki.TestProfile
 import kabuki.listener.TestInfo
 import kabuki.listener.TestResult
-import kabuki.page.Screen
-import kabuki.page.onScreen
 
 /**
  * Incremental adoption: Kabuki on top of an EXISTING ComposeTestRule - your
@@ -78,7 +76,7 @@ public fun ComposeTestRule.kabukiScope(
  *
  * ```kotlin
  * composeRule.kabuki(name = "Payment with a saved card") {
- *     step("New compose part") { onScreen<PaymentScreen> { payButton.click() } }
+ *     step("New compose part") { PaymentScreen { payButton.click() } }
  * }
  * ```
  *
@@ -108,34 +106,18 @@ public fun ComposeTestRule.kabuki(
 }
 
 /**
- * One-shot flat form - a Kabuki screen straight on the rule:
+ * Mixin for base test classes: implement it once, and Kabuki screens are entered
+ * FLAT in tests - `PaymentScreen { payButton.click() }` - right next to legacy
+ * framework calls.
  *
- * ```kotlin
- * composeRule.onScreen<PaymentScreen> { payButton.click() }
- * ```
- */
-public inline fun <reified T : Screen<T>> ComposeTestRule.onScreen(
-    noinline block: T.() -> Unit = {},
-): T {
-    return kabukiScope().onScreen(block)
-}
-
-/**
- * Mixin for base test classes: implement it once and call `onScreen<KabukiScreen>`
- * FLAT in tests, next to legacy framework calls. The compiler picks the framework
- * by the screen type (Kabuki screens resolve here; legacy screens resolve to the
- * legacy top-level functions).
+ * Creating the scope is what makes that work: a screen takes the test running on
+ * this thread, and [kabukiScope] is where that test is published. So the property
+ * has to be touched at least once before the first screen - a `by lazy` in the base
+ * class that nothing reads is not enough. [KabukiRule] does this for you.
  */
 public interface KabukiInterop {
     /** The Kabuki scope of the current test, usually built from the existing ComposeTestRule. */
     public val kabukiScope: KabukiTestScope
-}
-
-/** Kabuki's `onScreen` for classes implementing [KabukiInterop]. */
-public inline fun <reified T : Screen<T>> KabukiInterop.onScreen(
-    noinline block: T.() -> Unit = {},
-): T {
-    return kabukiScope.onScreen(block)
 }
 
 /** Platform default profile for interop scopes (desktop defaults / real device). */

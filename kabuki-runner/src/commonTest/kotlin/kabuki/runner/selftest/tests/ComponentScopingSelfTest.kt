@@ -3,7 +3,6 @@ package kabuki.runner.selftest.tests
 import kabuki.KabukiAssertionError
 import kabuki.page.Component
 import kabuki.page.Screen
-import kabuki.page.onScreen
 import kabuki.runner.selftest.SelfTestCase
 import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
@@ -23,7 +22,7 @@ class ComponentScopingSelfTest : SelfTestCase() {
     @Test
     fun identicalComponentsAddressTheirOwnElements() {
         runTest(name = "two identical components") {
-            onScreen(PanelsScreen()) {
+            PanelsScreen {
                 left.label.assertTextEquals("left")
                 right.label.assertTextEquals("right")
             }
@@ -46,7 +45,7 @@ class ComponentScopingSelfTest : SelfTestCase() {
     @Test
     fun scopingComposesThroughNestedComponents() {
         runTest(name = "nested components") {
-            onScreen(PanelsScreen()) {
+            PanelsScreen {
                 // button -> its group -> its panel: three levels, and the button tag
                 // exists four times on screen (two panels x two nestings).
                 left.group.button.assertTextContains("Tap left")
@@ -58,7 +57,7 @@ class ComponentScopingSelfTest : SelfTestCase() {
     @Test
     fun collectionsAreScopedToo() {
         runTest(name = "nodeAll inside a component") {
-            onScreen(PanelsScreen()) {
+            PanelsScreen {
                 // The same tag exists twice on screen - once per panel.
                 left.labels.assertCountEquals(1)
                 right.labels.assertCountEquals(1)
@@ -70,7 +69,7 @@ class ComponentScopingSelfTest : SelfTestCase() {
     @Test
     fun lazyListsAreScopedToo() {
         runTest(name = "lazyList inside a component") {
-            onScreen(PanelsScreen()) {
+            PanelsScreen {
                 // Both panels hold a list with the same tag AND items with the same
                 // index, so an unscoped list matcher resolves to two nodes at once.
                 left.list.itemNodeAt(0).assertTextContains("left item 0")
@@ -82,7 +81,7 @@ class ComponentScopingSelfTest : SelfTestCase() {
     @Test
     fun aCopiedNodeKeepsItsScope() {
         runTest(name = "withTimeout and merged keep the scope") {
-            onScreen(PanelsScreen()) {
+            PanelsScreen {
                 // withTimeout and .merged rebuild the node - if the copy lost its
                 // host, the label would be searched globally and match twice.
                 left.label.withTimeout(1.seconds).assertTextEquals("left")
@@ -94,7 +93,7 @@ class ComponentScopingSelfTest : SelfTestCase() {
     @Test
     fun aComponentRootIsNotScopedByItself() {
         runTest(name = "root does not scope itself") {
-            onScreen(PanelsScreen()) {
+            PanelsScreen {
                 // Would need an ancestor matching itself, and resolve to nothing.
                 left.root.assertExists()
             }
@@ -106,7 +105,7 @@ class ComponentScopingSelfTest : SelfTestCase() {
         runTest(name = "node declared before root") {
             // The scope is resolved at operation time, not at declaration time -
             // otherwise this label would be searched globally, match twice and fail.
-            onScreen(ReversedOrderScreen()) {
+            ReversedOrderScreen {
                 panel.label.assertTextEquals("right")
             }
         }
@@ -115,14 +114,14 @@ class ComponentScopingSelfTest : SelfTestCase() {
     @Test
     fun aScreenWithoutARootIsEnteredWithoutWaiting() {
         runTest(name = "screen without root") {
-            onScreen(NoRootScreen()) {
+            NoRootScreen {
                 title.assertTextEquals("Kabuki SelfTest")
             }
         }
     }
 }
 
-private class PanelsScreen : Screen<PanelsScreen>() {
+private object PanelsScreen : Screen<PanelsScreen>() {
     override val root = node(SelfTestTags.SCREEN)
     val left = component { PanelComponent("left") }
     val right = component { PanelComponent("right") }
@@ -147,12 +146,12 @@ private class ReversedOrderComponent : Component<ReversedOrderComponent>() {
     override val root = node(SelfTestTags.PANEL, "right")
 }
 
-private class ReversedOrderScreen : Screen<ReversedOrderScreen>() {
+private object ReversedOrderScreen : Screen<ReversedOrderScreen>() {
     override val root = node(SelfTestTags.SCREEN)
     val panel = component(::ReversedOrderComponent)
 }
 
 /** No root at all - allowed: the first operation waits through its own retry. */
-private class NoRootScreen : Screen<NoRootScreen>() {
+private object NoRootScreen : Screen<NoRootScreen>() {
     val title = node(SelfTestTags.TITLE)
 }

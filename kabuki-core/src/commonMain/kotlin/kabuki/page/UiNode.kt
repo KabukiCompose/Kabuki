@@ -700,7 +700,7 @@ public class UiNode(
         if (entry.isEmpty()) {
             return null
         }
-        val onScreen = runCatching {
+        val tagsOnScreen = runCatching {
             val unmerged = scope.config.treeStrategy.structuralSearch == Tree.Unmerged
             scope.context
                 .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.TestTag), useUnmergedTree = unmerged)
@@ -710,10 +710,10 @@ public class UiNode(
 
         // The tag IS there and the operation failed for its own reasons - naming
         // lookalikes here would send the reader after a name that is already right.
-        if (tag in onScreen) {
+        if (tag in tagsOnScreen) {
             return null
         }
-        val lookalikes = onScreen
+        val lookalikes = tagsOnScreen
             .filter { present -> present.endsWith(".$entry") }
             .distinct()
             // A long list would bury the message it is attached to.

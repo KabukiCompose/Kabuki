@@ -2,7 +2,6 @@ package kabuki.runner.selftest.tests
 
 import kabuki.page.Component
 import kabuki.page.Screen
-import kabuki.page.onScreen
 import kabuki.runner.selftest.SelfTestCase
 import kabuki.runner.selftest.app.SelfTestTags
 import kabuki.runner.selftest.app.TREE_LABEL_TEXT
@@ -24,8 +23,8 @@ class ObjectComponentSelfTest : SelfTestCase() {
         runTest(name = "object component, two screens") {
             // A screen does not scope its nodes (dialogs live outside its subtree),
             // so both screens give the component the same - empty - context.
-            onScreen(FirstScreen()) { treeButton.label.assertTextEquals(TREE_LABEL_TEXT) }
-            onScreen(SecondScreen()) { treeButton.label.assertTextEquals(TREE_LABEL_TEXT) }
+            FirstScreen { treeButton.label.assertTextEquals(TREE_LABEL_TEXT) }
+            SecondScreen { treeButton.label.assertTextEquals(TREE_LABEL_TEXT) }
         }
     }
 
@@ -41,11 +40,16 @@ class ObjectComponentSelfTest : SelfTestCase() {
     @Test
     fun enteringTheSameScreenTwiceDoesNotLookLikeTwoOwners() {
         runTest(name = "same screen entered twice") {
-            // Each entry builds a NEW screen instance, so the singleton group ends
-            // up with two owners - but they describe the SAME container, and that
-            // must not read as an ambiguity.
-            onScreen(SinglePanelScreen()) { panel.group.button.assertTextContains("Tap left") }
-            onScreen(SinglePanelScreen()) { panel.group.button.assertTextContains("Tap left") }
+            // Two SEPARATE instances of one screen, and that is the whole point:
+            // the singleton group ends up with two owners which describe the SAME
+            // container, and that must not read as an ambiguity. An `object` screen
+            // would hand out one instance twice and the case would not arise at all -
+            // which is why this screen stays a class while the others here do not.
+            val firstEntry = SinglePanelScreen()
+            firstEntry { panel.group.button.assertTextContains("Tap left") }
+
+            val secondEntry = SinglePanelScreen()
+            secondEntry { panel.group.button.assertTextContains("Tap left") }
         }
     }
 
@@ -70,7 +74,7 @@ class ObjectComponentSelfTest : SelfTestCase() {
                 // scopes. One object cannot belong to two containers at once, so
                 // the library says so instead of silently taking the last owner -
                 // which used to make the left panel search inside the right one.
-                onScreen(PanelsWithSharedGroupScreen()) {
+                PanelsWithSharedGroupScreen {
                     left.group.button.assertTextContains("Tap left")
                 }
             }
@@ -92,12 +96,12 @@ private object TreeButtonBlock : Component<TreeButtonBlock>() {
     val label = node(SelfTestTags.TREE_BUTTON_LABEL)
 }
 
-private class FirstScreen : Screen<FirstScreen>() {
+private object FirstScreen : Screen<FirstScreen>() {
     override val root = node(SelfTestTags.SCREEN)
     val treeButton = component { TreeButtonBlock }
 }
 
-private class SecondScreen : Screen<SecondScreen>() {
+private object SecondScreen : Screen<SecondScreen>() {
     override val root = node(SelfTestTags.SCREEN)
     val treeButton = component { TreeButtonBlock }
 }
@@ -112,7 +116,7 @@ private class PanelWithSharedGroup(side: String) : Component<PanelWithSharedGrou
     val group = component { SharedGroupBlock }
 }
 
-private class PanelsWithSharedGroupScreen : Screen<PanelsWithSharedGroupScreen>() {
+private object PanelsWithSharedGroupScreen : Screen<PanelsWithSharedGroupScreen>() {
     override val root = node(SelfTestTags.SCREEN)
     val left = component { PanelWithSharedGroup("left") }
     val right = component { PanelWithSharedGroup("right") }

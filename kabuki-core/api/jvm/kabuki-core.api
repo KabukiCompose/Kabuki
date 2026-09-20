@@ -481,15 +481,6 @@ public final class kabuki/page/NodeMatcherBuilderKt {
 	public static synthetic fun uiNode-hhJSO8g$default (Lkotlin/jvm/functions/Function0;Lkotlin/time/Duration;Lkabuki/page/NodeHost;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/page/UiNode;
 }
 
-public final class kabuki/page/OnScreenKt {
-	public static final fun onScreen (Lkabuki/KabukiTestScope;Lkabuki/page/Screen;Lkotlin/jvm/functions/Function1;)Lkabuki/page/Screen;
-	public static synthetic fun onScreen$default (Lkabuki/KabukiTestScope;Lkabuki/page/Screen;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lkabuki/page/Screen;
-}
-
-public final class kabuki/page/OnScreen_jvmKt {
-	public static final fun instantiateScreen (Lkotlin/reflect/KClass;)Lkabuki/page/Screen;
-}
-
 public abstract class kabuki/page/Screen : kabuki/page/NodeHost {
 	public static final field $stable I
 	public fun <init> ()V

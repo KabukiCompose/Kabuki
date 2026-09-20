@@ -146,9 +146,11 @@ scope on that thread replaces them. Object page objects entered by the short for
 reach the previous scope. `KabukiRule` and the block form both end their scope and
 have neither problem.
 
-The mixin is the flattest to read (`onScreen<T>` right next to the legacy code)
+The mixin is the flattest to read (a screen entered right next to the legacy code)
 and the only one that cannot report the test itself. Pick it when the existing
-base class already owns the reporting.
+base class already owns the reporting. Note that its `kabukiScope` must actually
+be created before the first screen call - creating the scope is what publishes the
+test to the thread a screen looks at, so a `by lazy` nothing reads is not enough.
 
 `KabukiRule` also takes the test name from JUnit and releases page objects at the
 end. Declare it INSIDE the Compose rule - `@get:Rule(order = 0)` for the Compose

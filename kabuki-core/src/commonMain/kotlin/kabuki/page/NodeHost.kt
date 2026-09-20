@@ -12,7 +12,7 @@ import kotlin.time.Duration
  * test scope. Nodes are declared as properties at construction time - before any
  * scope exists - and resolve the scope at operation time.
  *
- * No static state: the scope is injected per test via [bind] (done by `onScreen`),
+ * No static state: the scope is injected per test via [bind] (done when a screen is entered),
  * so parallel tests within one JVM do not conflict.
  */
 public abstract class NodeHost {
@@ -41,11 +41,12 @@ public abstract class NodeHost {
         get() {
             // A page object that outlives its test (an `object`) is released when
             // the test finishes, so a stale binding shows up here as "not bound"
-            // rather than as a hang on a scene that no longer exists. Entering a
-            // finished test is refused earlier, in Screen.enter.
+            // rather than as a hang on a scene that no longer exists. A scope kept
+            // by hand and used later is caught one step further in, by the operation
+            // itself - see the isFinished check in runOperation.
             return boundScope.get() ?: throw KabukiUsageError(
-                "${this::class.simpleName} is not bound to a test scope. Enter its screen first: " +
-                    "onScreen<Screen> { }, onScreen(ObjectScreen) { } or ObjectScreen { }.",
+                "${this::class.simpleName} is not bound to a test scope. Enter its screen " +
+                    "first, inside the test that uses it: MyScreen { ... }.",
             )
         }
 
@@ -57,7 +58,7 @@ public abstract class NodeHost {
         scope.registerBoundHost(this)
         for (child in children) {
             // Re-established on every entry, because [unbind] drops it: a singleton
-            // component must not accumulate one owner per onScreen call for the
+            // component must not accumulate one owner per screen entry for the
             // whole run - it outlives every test that ever declared it.
             child.addOwner(this)
             child.bind(scope)
@@ -103,8 +104,8 @@ public abstract class NodeHost {
         }
         // Own root aside, the container comes from whoever declared this host.
         // Several owners are fine as long as they all point at the SAME container:
-        // entering one screen twice builds two screen instances, and both describe
-        // the same place. Only genuinely different containers are ambiguous.
+        // a screen declared as a class and instantiated twice gives two page objects
+        // describing the same place. Only genuinely different containers are ambiguous.
         val containers = owners
             .mapNotNull { owner -> owner.containerFor(node) }
             .distinctBy { container -> container.description }

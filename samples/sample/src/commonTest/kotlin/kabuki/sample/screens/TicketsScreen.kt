@@ -6,7 +6,7 @@ import kabuki.page.Screen
 import kabuki.page.UiNode
 import kabuki.sample.ui.TicketsTags
 
-class TicketsScreen : Screen<TicketsScreen>() {
+object TicketsScreen : Screen<TicketsScreen>() {
 
     override val root = node(TicketsTags.SCREEN)
 

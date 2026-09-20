@@ -5,7 +5,6 @@ import kabuki.KabukiAssertionError
 import kabuki.page.ListItem
 import kabuki.page.ListItemScope
 import kabuki.page.Screen
-import kabuki.page.onScreen
 import kabuki.runner.selftest.SelfTestCase
 import kabuki.runner.selftest.app.LAZY_ITEM_COUNT
 import kabuki.runner.selftest.app.SelfTestSection
@@ -35,7 +34,7 @@ class LazyListSelfTest : SelfTestCase() {
         config = { defaultTimeout = 1.seconds },
     ) {
         step("The full length is asserted even though most items are not composed") {
-            onScreen<SelfTestListScreen> {
+            SelfTestListScreen {
                 items.assertLengthEquals(LAZY_ITEM_COUNT)
 
                 val visible = items.visibleItems().count()
@@ -48,7 +47,7 @@ class LazyListSelfTest : SelfTestCase() {
         }
 
         step("A wrong length fails") {
-            onScreen<SelfTestListScreen> {
+            SelfTestListScreen {
                 assertFailsWith<KabukiAssertionError> {
                     items.assertLengthEquals(LAZY_ITEM_COUNT - 1)
                 }
@@ -65,7 +64,7 @@ class LazyListSelfTest : SelfTestCase() {
         config = { defaultTimeout = 1.seconds },
     ) {
         step("An item far down the list is reached by index") {
-            onScreen<SelfTestListScreen> {
+            SelfTestListScreen {
                 items.itemNodeAt(LAZY_ITEM_COUNT - 1).assertDoesNotExist()
                 items.itemAt<LazyRowItem>(LAZY_ITEM_COUNT - 1) {
                     node.assertIsDisplayed()
@@ -74,7 +73,7 @@ class LazyListSelfTest : SelfTestCase() {
         }
 
         step("An index past the end does not exist") {
-            onScreen<SelfTestListScreen> {
+            SelfTestListScreen {
                 items.itemNodeAt(LAZY_ITEM_COUNT).assertDoesNotExist()
             }
         }
@@ -87,7 +86,7 @@ class LazyListSelfTest : SelfTestCase() {
     ) {
         val far = LAZY_ITEM_COUNT - 3
         step("An item far below the fold is found by its text") {
-            onScreen<SelfTestListScreen> {
+            SelfTestListScreen {
                 // Not composed until the search scrolls to it.
                 items.itemNodeAt(far).assertDoesNotExist()
 
@@ -96,7 +95,7 @@ class LazyListSelfTest : SelfTestCase() {
         }
 
         step("The found item is then used by index") {
-            onScreen<SelfTestListScreen> {
+            SelfTestListScreen {
                 items.itemWhere<LazyRowItem>({ withText("lazy item $far") }) {
                     assertEquals(far, index)
                     node.assertIsDisplayed()
@@ -111,7 +110,7 @@ class LazyListSelfTest : SelfTestCase() {
         section = SelfTestSection.Scrolling,
     ) {
         val far = LAZY_ITEM_COUNT - 5
-        onScreen<SelfTestListScreen> {
+        SelfTestListScreen {
             // The index, not "some node is displayed": the first item is on screen
             // anyway, so a search that ignored the matcher would pass. Asserting text
             // would not work either - the item is a plain Box, and a non-merging
@@ -128,7 +127,7 @@ class LazyListSelfTest : SelfTestCase() {
         name = "itemWhere with several matches",
         section = SelfTestSection.Scrolling,
     ) {
-        onScreen<SelfTestListScreen> {
+        SelfTestListScreen {
             // Every item matches, so several are composed at once - the search must
             // answer with the FIRST one instead of failing on the ambiguity.
             assertEquals(0, items.indexOfItemWhere { withText("lazy item", substring = true) })
@@ -140,7 +139,7 @@ class LazyListSelfTest : SelfTestCase() {
         name = "itemWhere after scrolling away",
         section = SelfTestSection.Scrolling,
     ) {
-        onScreen<SelfTestListScreen> {
+        SelfTestListScreen {
             items.scrollToIndex(LAZY_ITEM_COUNT - 1)
 
             // The list is at its end now, and the match is far ABOVE - a search that
@@ -156,7 +155,7 @@ class LazyListSelfTest : SelfTestCase() {
         config = { defaultTimeout = 1.seconds },
     ) {
         val error = assertFailsWith<KabukiAssertionError> {
-            onScreen<SelfTestListScreen> {
+            SelfTestListScreen {
                 items.indexOfItemWhere { withText("no such item") }
             }
         }
@@ -170,7 +169,7 @@ class LazyListSelfTest : SelfTestCase() {
 }
 
 /** Page object over the lazy list of [SelfTestApp]. */
-class SelfTestListScreen : Screen<SelfTestListScreen>() {
+object SelfTestListScreen : Screen<SelfTestListScreen>() {
     override val root = node { withTag(SelfTestTags.SCREEN) }
 
     val items = lazyList(SelfTestTags.LAZY_LIST) { itemType(::LazyRowItem) }

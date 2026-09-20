@@ -8,7 +8,7 @@ import kabuki.sample.ui.ReviewTags
 /**
  * Reviews modal: a long lazy list with typed items - the main LazyList DSL demo.
  */
-class ReviewsDialog : Screen<ReviewsDialog>() {
+object ReviewsDialog : Screen<ReviewsDialog>() {
 
     override val root = node(ReviewTags.DIALOG)
 

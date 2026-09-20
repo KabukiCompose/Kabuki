@@ -4,7 +4,6 @@ import kabuki.KabukiTestScope
 import kabuki.page.ListItem
 import kabuki.page.ListItemScope
 import kabuki.page.Screen
-import kabuki.page.onScreen
 import kabuki.runner.runKabukiTest
 
 /**
@@ -13,7 +12,7 @@ import kabuki.runner.runKabukiTest
  * Kotlin 2.2 build resolve and use our artifacts. Metadata variants stay
  * unchecked, see build.gradle.kts.
  */
-private class KmpScreen : Screen<KmpScreen>() {
+private object KmpScreen : Screen<KmpScreen>() {
     override val root = node(KmpTags.SCREEN)
     val items = lazyList(KmpTags.LIST) { itemType(::KmpItem) }
 }
@@ -26,7 +25,7 @@ private class KmpItem(scope: ListItemScope) : ListItem(scope) {
 private fun sharedTestCompiles(): () -> Unit {
     return {
         runKabukiTest(name = "consumer") {
-            onScreen<KmpScreen> {
+            KmpScreen {
                 items.assertLengthEquals(2)
                 root.assertIsDisplayed()
                 // Every inline function with a reified type parameter is called

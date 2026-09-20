@@ -1,6 +1,5 @@
 package kabuki.sample.tests
 
-import kabuki.page.onScreen
 import kabuki.sample.runner.runTheaterTest
 import kabuki.sample.screens.PerformanceCardItem
 import kabuki.sample.screens.PerformanceScreen
@@ -24,16 +23,16 @@ class ListsE2eTest {
     @Test
     fun reviewsListInModal() = runTheaterTest(name = "Reviews lazy list in a modal") {
         step("Open a performance and its reviews") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 card("chushingura").click()
             }
-            onScreen<PerformanceScreen> {
+            PerformanceScreen {
                 poster.assertBackgroundColor(PosterBackground)
                 openReviews()
             }
         }
 
-        onScreen<ReviewsDialog> {
+        ReviewsDialog {
             step("List is loaded: visible items and the full published length") {
                 reviews {
                     assertNotEmpty()
@@ -65,7 +64,7 @@ class ListsE2eTest {
             }
         }
 
-        onScreen<PerformanceScreen> {
+        PerformanceScreen {
             title.assertTextContains("Chushingura")
         }
     }
@@ -73,15 +72,15 @@ class ListsE2eTest {
     @Test
     fun seatRowsLazyListInModal() = runTheaterTest(name = "Seat rows lazy list in a modal") {
         step("Open the seat picker") {
-            onScreen<PlaybillScreen> {
+            PlaybillScreen {
                 card("yotsuya").click()
             }
-            onScreen<PerformanceScreen> {
+            PerformanceScreen {
                 openSeatPicker()
             }
         }
 
-        onScreen<SeatPickerDialog> {
+        SeatPickerDialog {
             step("Rows list: full length is published") {
                 rows {
                     assertNotEmpty()
@@ -97,13 +96,13 @@ class ListsE2eTest {
         }
 
         step("Confirmation shows the picked seat, then cancel") {
-            onScreen<PurchaseConfirmDialog> {
+            PurchaseConfirmDialog {
                 root.assertIsDisplayed()
                 cancelButton.click()
             }
         }
 
-        onScreen<SeatPickerDialog> {
+        SeatPickerDialog {
             step("Back in the seat picker after cancel") {
                 rows.node.assertIsDisplayed()
             }
@@ -112,7 +111,7 @@ class ListsE2eTest {
 
     @Test
     fun playbillGridAddressing() = runTheaterTest(name = "Lazy GRID item addressing") {
-        onScreen<PlaybillScreen> {
+        PlaybillScreen {
             step("Grid is loaded: full length is published") {
                 cards {
                     assertNotEmpty()
@@ -141,7 +140,7 @@ class ListsE2eTest {
             }
         }
 
-        onScreen<PerformanceScreen> {
+        PerformanceScreen {
             title.assertTextContains("Momotaro")
         }
     }

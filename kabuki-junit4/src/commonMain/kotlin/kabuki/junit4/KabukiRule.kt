@@ -22,7 +22,7 @@ import org.junit.runners.model.Statement
  * }
  *
  * class PaymentTest : BaseTest() {
- *     @Test fun pay() = onScreen<PaymentScreen> { payButton.click() }
+ *     @Test fun pay() = PaymentScreen { payButton.click() }
  * }
  * ```
  *
