@@ -108,8 +108,9 @@ tests have to be written twice. Kabuki exists so the same test covers both.
   its node, in the console or in a logger of your own.
 - **A real window next to the headless scene** on desktop, so a test can be
   watched. No `java.awt.Robot`, so windows do not fight over the cursor.
-- **Environment profiles** - scene size, density, window size class,
-  `os()` branches and `assumeOs` / `assumeSizeClass`.
+- **Environment profiles** - scene size, density, width and height size classes
+  on the app's own breakpoints, `os()` forks, and `onlyOn*` blocks that run a step
+  only where it applies instead of skipping the whole test.
 - **Extension points instead of a dead end** - `action` and `read` run your own
   code with the same retry and reporting as a built-in operation, `passed`
   answers instead of failing the test, `raw` stays for the rest.

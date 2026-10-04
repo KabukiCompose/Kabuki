@@ -32,7 +32,7 @@ public class KabukiTestScope(
     public val context: KabukiComposeContext,
     /** Timeouts, interceptors and listeners for THIS test - one instance per test. */
     public val config: KabukiConfig,
-    /** The environment this test runs in: platform, OS, size. Drives `os()` and `assumeSizeClass`. */
+    /** The environment this test runs in: platform, OS, size. Drives `os()` and the `onlyOn*` blocks. */
     public val profile: TestProfile,
     private val onSetContent: ((content: @Composable () -> Unit) -> Unit)? = null,
 ) {
