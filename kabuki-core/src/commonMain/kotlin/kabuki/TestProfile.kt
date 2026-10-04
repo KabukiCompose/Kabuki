@@ -12,7 +12,7 @@ public enum class Platform {
 
 /**
  * Concrete operating system - finer than [Platform], because desktop behaviour
- * differs between systems. Used by `os()` branches and `assumeOs`.
+ * differs between systems. Used by `os()` forks and `onlyOnOs`.
  */
 public enum class Os {
     Windows,
@@ -28,23 +28,10 @@ public enum class Orientation {
     Landscape,
 }
 
-/** Material 3 window size class buckets (no dependency on material3). */
-public enum class SizeClass {
-    Compact,
-    Medium,
-    Expanded,
-}
-
-/** Size class along both axes: width (600/840 dp) and height (480/900 dp) thresholds. */
-public data class WindowSizeClass(
-    val width: SizeClass,
-    val height: SizeClass,
-)
-
 /**
  * The test environment profile: platform, OS, window size and density.
  * Available in every test as `KabukiTestScope.profile`; drives the headless
- * scene size, the visible window size and the os()/layout() forks.
+ * scene size, the visible window size, the `os()` forks and the `onlyOn*` blocks.
  */
 public data class TestProfile(
     val platform: Platform,
@@ -57,20 +44,6 @@ public data class TestProfile(
             return if (windowSize.width >= windowSize.height) Orientation.Landscape else Orientation.Portrait
         }
 
-    val sizeClass: WindowSizeClass
-        get() {
-            val width = when {
-                windowSize.width < 600.dp -> SizeClass.Compact
-                windowSize.width < 840.dp -> SizeClass.Medium
-                else -> SizeClass.Expanded
-            }
-            val height = when {
-                windowSize.height < 480.dp -> SizeClass.Compact
-                windowSize.height < 900.dp -> SizeClass.Medium
-                else -> SizeClass.Expanded
-            }
-            return WindowSizeClass(width, height)
-        }
 }
 
 /** Detects the OS the test is currently running on. */
@@ -128,8 +101,8 @@ public object Profiles {
 
     /**
      * Android presets. On a real device the window size is dictated by the
-     * device itself - these describe the environment for assertions and
-     * `assumeSizeClass`, they do not resize anything.
+     * device itself - these describe the environment for assertions and for the
+     * `onlyOn*` blocks, they do not resize anything.
      */
     public object Android {
         /** 10" tablet in landscape - the expanded size class. */
@@ -142,6 +115,15 @@ public object Profiles {
         public val PhonePortrait: TestProfile
             get() {
                 return profile(width = 411, height = 891)
+            }
+
+        /**
+         * The same phone turned sideways. The one preset with a COMPACT height:
+         * a tablet in landscape is landscape too, and has twice the vertical room.
+         */
+        public val PhoneLandscape: TestProfile
+            get() {
+                return profile(width = 891, height = 411)
             }
 
         /** A custom Android profile: size in dp, plus an optional density. */

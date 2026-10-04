@@ -36,6 +36,15 @@ public class KabukiConfig {
     public var stallReporter: (message: String) -> Unit = { message -> println(message) }
 
     /**
+     * Bounds of the width buckets read by [kabuki.widthClass] and
+     * [onlyOnWidthClass]. Material defaults; override when the app has its own.
+     */
+    public var widthBreakpoints: WidthBreakpoints = WidthBreakpoints()
+
+    /** Bounds of the height buckets. See [widthBreakpoints]. */
+    public var heightBreakpoints: HeightBreakpoints = HeightBreakpoints()
+
+    /**
      * Which semantics tree each kind of search looks at. Deliberately not a single
      * boolean: one switch answers two different questions and is wrong for half of
      * them - see [TreeStrategy].

@@ -3,16 +3,17 @@ package kabuki.runner.selftest.tests
 import kabuki.Orientation
 import kabuki.Os
 import kabuki.Profiles
-import kabuki.SizeClass
-import kabuki.assumeOs
-import kabuki.assumeSizeClass
+import kabuki.HeightClass
+import kabuki.WidthClass
 import kabuki.detectOs
+import kabuki.heightClass
 import kabuki.listener.KabukiListener
 import kabuki.listener.OperationInfo
 import kabuki.listener.StepInfo
 import kabuki.listener.TestInfo
 import kabuki.listener.TestResult
 import kabuki.os
+import kabuki.widthClass
 import kabuki.runner.WindowMode
 import kabuki.runner.runDesktopTest
 import kabuki.runner.selftest.app.SelfTestApp
@@ -21,12 +22,14 @@ import kabuki.runner.selftest.app.SelfTestTags
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Self-tests for profiles, OS forks, assumptions, polling and the listener SPI.
+ * Self-tests for profiles, OS forks, polling and the listener SPI.
+ *
+ * The `onlyOn*` family has its own suite in OnlyOnSelfTest - it is common code
+ * and must run on a device too.
  */
 class ProfileSelfTest {
 
@@ -38,8 +41,10 @@ class ProfileSelfTest {
     ) {
         assertEquals(detectOs(), profile.os)
         assertEquals(Orientation.Landscape, profile.orientation)
-        assertEquals(SizeClass.Expanded, profile.sizeClass.width)
-        assertEquals(SizeClass.Medium, profile.sizeClass.height)
+        // 1366x768: Large by width since the desktop buckets were split out of
+        // Expanded, Medium by height.
+        assertEquals(WidthClass.Large, widthClass)
+        assertEquals(HeightClass.Medium, heightClass)
 
         // The headless scene actually gets the profile size: the app can read it
         val state = SelfTestAppState()
@@ -76,53 +81,6 @@ class ProfileSelfTest {
             "has no branch" in error.message.orEmpty(),
             "The fork must say which OS it has no branch for: ${error.message}",
         )
-    }
-
-    @Test
-    fun assumeOsDoesNotSkipOnTheCurrentOs() = runDesktopTest(
-        name = "assumeOs no skip",
-        window = WindowMode.Headless,
-    ) {
-        // Caught here on purpose. If the skip were let through, this test would be
-        // reported as SKIPPED - which reads as green, so nothing would ever notice
-        // an assumeOs that skips unconditionally and silently disables suites.
-        val skip = runCatching { assumeOs(detectOs()) }.exceptionOrNull()
-
-        assertNull(skip, "assumeOs must not skip when the current OS is allowed, got: $skip")
-    }
-
-    @Test
-    fun assumeSizeClassDoesNotSkipOnTheCurrentSizeClass() = runDesktopTest(
-        name = "assumeSizeClass no skip",
-        profile = Profiles.Desktop.SmallHd,
-        window = WindowMode.Headless,
-    ) {
-        val skip = runCatching { assumeSizeClass(profile.sizeClass.width) }.exceptionOrNull()
-
-        assertNull(skip, "assumeSizeClass must not skip when the size class matches, got: $skip")
-    }
-
-    @Test
-    fun assumeSizeClassSkipsOnAForeignSizeClass() = runDesktopTest(
-        name = "assumeSizeClass skip",
-        profile = Profiles.Desktop.SmallHd,
-        window = WindowMode.Headless,
-    ) {
-        val other = SizeClass.entries.first { size -> size != profile.sizeClass.width }
-        val skip = runCatching { assumeSizeClass(other) }.exceptionOrNull()
-
-        assertTrue(skip != null, "assumeSizeClass must skip when the size class does not match")
-    }
-
-    @Test
-    fun assumeOsSkipsOnForeignOs() = runDesktopTest(
-        name = "assumeOs skip",
-        window = WindowMode.Headless,
-    ) {
-        // The current OS is never Browser on desktop - the test must be SKIPPED,
-        // not failed (verified by skipped="1" in the JUnit report)
-        assumeOs(Os.Browser)
-        error("unreachable: assumeOs must have skipped the test")
     }
 
     @Test

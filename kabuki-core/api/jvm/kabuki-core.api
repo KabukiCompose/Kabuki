@@ -1,6 +1,13 @@
 public final class kabuki/BranchingKt {
-	public static final fun assumeOs (Lkabuki/KabukiTestScope;[Lkabuki/Os;)V
-	public static final fun assumeSizeClass (Lkabuki/KabukiTestScope;[Lkabuki/SizeClass;)V
+	public static final fun onlyOnHeightAtLeast-lG28NQ4 (Lkabuki/KabukiTestScope;FLkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnHeightBelow-lG28NQ4 (Lkabuki/KabukiTestScope;FLkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnHeightClass (Lkabuki/KabukiTestScope;Lkabuki/HeightClass;[Lkabuki/HeightClass;Lkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnOrientation (Lkabuki/KabukiTestScope;Lkabuki/Orientation;Lkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnOs (Lkabuki/KabukiTestScope;Lkabuki/Os;[Lkabuki/Os;Lkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnPlatform (Lkabuki/KabukiTestScope;Lkabuki/Platform;[Lkabuki/Platform;Lkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnWidthAtLeast-lG28NQ4 (Lkabuki/KabukiTestScope;FLkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnWidthBelow-lG28NQ4 (Lkabuki/KabukiTestScope;FLkotlin/jvm/functions/Function0;)V
+	public static final fun onlyOnWidthClass (Lkabuki/KabukiTestScope;Lkabuki/WidthClass;[Lkabuki/WidthClass;Lkotlin/jvm/functions/Function0;)V
 	public static final fun os (Lkabuki/KabukiTestScope;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;)V
 	public static synthetic fun os$default (Lkabuki/KabukiTestScope;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 }
@@ -15,6 +22,31 @@ public final class kabuki/ClickViaSemanticsAction : kabuki/KabukiInterceptor {
 	public static final field $stable I
 	public fun <init> ()V
 	public fun intercept (Lkabuki/InterceptedOperation;)V
+}
+
+public final class kabuki/HeightBreakpoints {
+	public static final field $stable I
+	public synthetic fun <init> (FFILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (FFLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun classOf-0680j_4 (F)Lkabuki/HeightClass;
+	public final fun component1-D9Ej5fM ()F
+	public final fun component2-D9Ej5fM ()F
+	public final fun copy-YgX7TsA (FF)Lkabuki/HeightBreakpoints;
+	public static synthetic fun copy-YgX7TsA$default (Lkabuki/HeightBreakpoints;FFILjava/lang/Object;)Lkabuki/HeightBreakpoints;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getExpanded-D9Ej5fM ()F
+	public final fun getMedium-D9Ej5fM ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/HeightClass : java/lang/Enum {
+	public static final field Compact Lkabuki/HeightClass;
+	public static final field Expanded Lkabuki/HeightClass;
+	public static final field Medium Lkabuki/HeightClass;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lkabuki/HeightClass;
+	public static fun values ()[Lkabuki/HeightClass;
 }
 
 public final class kabuki/InterceptedOperation {
@@ -47,6 +79,7 @@ public final class kabuki/KabukiConfig {
 	public fun <init> ()V
 	public final fun getDefaultTimeout-UwyO8pc ()J
 	public final fun getDumpSemanticsTreeOnFailure ()Z
+	public final fun getHeightBreakpoints ()Lkabuki/HeightBreakpoints;
 	public final fun getInterceptors ()Ljava/util/List;
 	public final fun getListeners ()Ljava/util/List;
 	public final fun getMaxTreeDumpLines ()I
@@ -55,24 +88,22 @@ public final class kabuki/KabukiConfig {
 	public final fun getStallWarningAfter-UwyO8pc ()J
 	public final fun getStrictListeners ()Z
 	public final fun getTreeStrategy ()Lkabuki/TreeStrategy;
+	public final fun getWidthBreakpoints ()Lkabuki/WidthBreakpoints;
 	public final fun notifyListeners (Lkotlin/jvm/functions/Function1;)V
 	public final fun setDefaultTimeout-LRDsOJo (J)V
 	public final fun setDumpSemanticsTreeOnFailure (Z)V
+	public final fun setHeightBreakpoints (Lkabuki/HeightBreakpoints;)V
 	public final fun setMaxTreeDumpLines (I)V
 	public final fun setPollingInterval-LRDsOJo (J)V
 	public final fun setStallReporter (Lkotlin/jvm/functions/Function1;)V
 	public final fun setStallWarningAfter-LRDsOJo (J)V
 	public final fun setStrictListeners (Z)V
 	public final fun setTreeStrategy (Lkabuki/TreeStrategy;)V
+	public final fun setWidthBreakpoints (Lkabuki/WidthBreakpoints;)V
 }
 
 public abstract interface class kabuki/KabukiInterceptor {
 	public abstract fun intercept (Lkabuki/InterceptedOperation;)V
-}
-
-public final class kabuki/KabukiSkipException : java/lang/RuntimeException {
-	public static final field $stable I
-	public fun <init> (Ljava/lang/String;)V
 }
 
 public final class kabuki/KabukiTestScope {
@@ -139,6 +170,7 @@ public final class kabuki/Profiles {
 public final class kabuki/Profiles$Android {
 	public static final field $stable I
 	public static final field INSTANCE Lkabuki/Profiles$Android;
+	public final fun getPhoneLandscape ()Lkabuki/TestProfile;
 	public final fun getPhonePortrait ()Lkabuki/TestProfile;
 	public final fun getTablet10Landscape ()Lkabuki/TestProfile;
 	public final fun profile (IIF)Lkabuki/TestProfile;
@@ -172,17 +204,9 @@ public final class kabuki/SearchKind : java/lang/Enum {
 	public static fun values ()[Lkabuki/SearchKind;
 }
 
-public final class kabuki/SizeClass : java/lang/Enum {
-	public static final field Compact Lkabuki/SizeClass;
-	public static final field Expanded Lkabuki/SizeClass;
-	public static final field Medium Lkabuki/SizeClass;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lkabuki/SizeClass;
-	public static fun values ()[Lkabuki/SizeClass;
-}
-
-public final class kabuki/SkipTest_jvmKt {
-	public static final fun skipTest (Ljava/lang/String;)Ljava/lang/Void;
+public final class kabuki/SizeClassesKt {
+	public static final fun getHeightClass (Lkabuki/KabukiTestScope;)Lkabuki/HeightClass;
+	public static final fun getWidthClass (Lkabuki/KabukiTestScope;)Lkabuki/WidthClass;
 }
 
 public final class kabuki/TestProfile {
@@ -200,7 +224,6 @@ public final class kabuki/TestProfile {
 	public final fun getOrientation ()Lkabuki/Orientation;
 	public final fun getOs ()Lkabuki/Os;
 	public final fun getPlatform ()Lkabuki/Platform;
-	public final fun getSizeClass ()Lkabuki/WindowSizeClass;
 	public final fun getWindowSize-MYxV2XQ ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -232,18 +255,35 @@ public final class kabuki/TreeStrategy$Companion {
 	public final fun getSmart ()Lkabuki/TreeStrategy;
 }
 
-public final class kabuki/WindowSizeClass {
+public final class kabuki/WidthBreakpoints {
 	public static final field $stable I
-	public fun <init> (Lkabuki/SizeClass;Lkabuki/SizeClass;)V
-	public final fun component1 ()Lkabuki/SizeClass;
-	public final fun component2 ()Lkabuki/SizeClass;
-	public final fun copy (Lkabuki/SizeClass;Lkabuki/SizeClass;)Lkabuki/WindowSizeClass;
-	public static synthetic fun copy$default (Lkabuki/WindowSizeClass;Lkabuki/SizeClass;Lkabuki/SizeClass;ILjava/lang/Object;)Lkabuki/WindowSizeClass;
+	public synthetic fun <init> (FFFFILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (FFFFLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun classOf-0680j_4 (F)Lkabuki/WidthClass;
+	public final fun component1-D9Ej5fM ()F
+	public final fun component2-D9Ej5fM ()F
+	public final fun component3-D9Ej5fM ()F
+	public final fun component4-D9Ej5fM ()F
+	public final fun copy-a9UjIt4 (FFFF)Lkabuki/WidthBreakpoints;
+	public static synthetic fun copy-a9UjIt4$default (Lkabuki/WidthBreakpoints;FFFFILjava/lang/Object;)Lkabuki/WidthBreakpoints;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getHeight ()Lkabuki/SizeClass;
-	public final fun getWidth ()Lkabuki/SizeClass;
+	public final fun getExpanded-D9Ej5fM ()F
+	public final fun getExtraLarge-D9Ej5fM ()F
+	public final fun getLarge-D9Ej5fM ()F
+	public final fun getMedium-D9Ej5fM ()F
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class kabuki/WidthClass : java/lang/Enum {
+	public static final field Compact Lkabuki/WidthClass;
+	public static final field Expanded Lkabuki/WidthClass;
+	public static final field ExtraLarge Lkabuki/WidthClass;
+	public static final field Large Lkabuki/WidthClass;
+	public static final field Medium Lkabuki/WidthClass;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lkabuki/WidthClass;
+	public static fun values ()[Lkabuki/WidthClass;
 }
 
 public final class kabuki/listener/ConsoleListener : kabuki/listener/KabukiListener {

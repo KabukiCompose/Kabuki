@@ -232,16 +232,12 @@ minified app publishes `a.SCREEN` while the test still looks for
 -keepnames class com.myapp.**Tags
 ```
 
-One more rule belongs here if your tests use `assumeOs` / `assumeSizeClass`:
-skipping is built by reflection over the test framework's own exception, and a
-renamed class turns every skip into a failure. `kabuki-core` ships the keep rules
-for it, so this is a thing to know rather than to write.
-
 Kabuki does not impose the tag rule on everyone: which enums exist is an
 application-level decision, and a blanket `-keepnames` would bloat every app
 that never tests a minified build. It does recognise the symptom - when the same
 entry is on screen under another class name, the failure says so and quotes the
-rule. Page object rules are already shipped in `kabuki-core`'s consumer rules.
+rule. This is the only keep rule Kabuki asks for: nothing in the library uses
+reflection any more, so it ships no consumer rules of its own.
 
 ### The IDE offers "run as unit test" and it fails
 

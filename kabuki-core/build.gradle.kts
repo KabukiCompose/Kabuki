@@ -54,7 +54,6 @@ android {
     namespace = "kabuki.core"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
     defaultConfig {
-        consumerProguardFiles("consumer-rules.pro")
         minSdk = libs.versions.androidMinSdk.get().toInt()
     }
 }
