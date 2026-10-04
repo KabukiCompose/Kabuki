@@ -1,7 +1,7 @@
 [versions]
 # Bytecode of the artifacts, not our JDK. 11 is Compose Desktop's own floor.
 jvmTarget = "11"
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 
 # Metadata in the artifacts, not the compiler: consumers on older Kotlin cannot read our modules.
 kotlinLanguage = "2.2"
