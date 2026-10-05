@@ -73,8 +73,16 @@ allprojects {
     // Android, so JS and Native targets would slip through.
     // -PallowWarnings turns this off when a toolchain update floods the build.
     tasks.withType<KotlinCompilationTask<*>>().configureEach {
+        // A metadata compilation sees BOTH coordinates of every Compose library at
+        // once - org.jetbrains.compose.* and the androidx.* it now wraps - and the
+        // KLIB loader warns once per duplicate. That graph is not ours to fix, and
+        // -Werror would turn it into a failed build. Nothing is lost: the same
+        // sources still compile under -Werror for every real target.
+        val metadataCompilation = name.endsWith("KotlinMetadata")
         compilerOptions {
-            allWarningsAsErrors.set(!providers.gradleProperty("allowWarnings").isPresent)
+            allWarningsAsErrors.set(
+                !providers.gradleProperty("allowWarnings").isPresent && !metadataCompilation,
+            )
 
             // languageVersion decides the metadata version of the artifacts, so
             // building with a newer compiler silently locks out consumers still
@@ -130,6 +138,13 @@ allprojects {
 apiValidation {
     // Public API is tracked for library modules only
     ignoredProjects += listOf("sample")
+
+    // Native targets are not covered by the .api dumps - those are JVM bytecode.
+    // Without this the iOS surface of kabuki-semantics would drift unnoticed.
+    @OptIn(kotlinx.validation.ExperimentalBCVApi::class)
+    klib {
+        enabled = true
+    }
 }
 
 /**

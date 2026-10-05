@@ -6,6 +6,11 @@ plugins {
 
 description = "Test tags and semantics for production Compose code - the only Kabuki artifact shipped in an app"
 
+// Which simulator the iOS tests run on. A name rather than a UDID, so it survives
+// a machine that recreated its devices; overridable because the set of simulators
+// on a CI image is not ours to pin.
+val simulatorDevice: String = providers.gradleProperty("kabuki.ios.device").getOrElse("iPhone 17")
+
 kotlin {
     explicitApi()
 
@@ -18,10 +23,25 @@ kotlin {
 
     jvm()
 
+    // No iosX64: compose.ui publishes neither it nor anything else for Intel
+    // simulators, so the target could not resolve its own dependency.
+    iosArm64()
+    iosSimulatorArm64 {
+        testRuns.configureEach {
+            deviceId = simulatorDevice
+        }
+    }
+
     sourceSets {
         commonMain.dependencies {
             // api: Modifier is part of the public signatures
             api(libs.compose.ui)
+        }
+
+        // The tag format is a contract between production code and tests, and it is
+        // built per platform - so it is pinned here, where every target compiles it.
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }
