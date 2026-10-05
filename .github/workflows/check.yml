@@ -195,6 +195,69 @@ jobs:
           ./gradlew :kabuki-runner:jvmTest --tests "*VisibleWindowSelfTest*"
           -Pkabuki.window --stacktrace
 
+  # The only job that can compile Kotlin/Native and boot a simulator, so it is the
+  # only place the iOS half of the library is checked at all. Everything after this
+  # phase leans on it.
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      # Close to a gigabyte, and it never changes for a given Kotlin. Without this
+      # every run downloads the compiler before it can start.
+      - name: Cache the Kotlin/Native distribution
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      # Which simulators exist is the runner image's business, not ours, and the
+      # names change with every Xcode. Pinning one here would turn an image update
+      # into a red build on a commit that changed nothing.
+      - name: Pick a simulator
+        run: |
+          device=$(xcrun simctl list devices available \
+            | sed -n 's/^ *\(iPhone [^(]*[^ (]\) *(.*/\1/p' | head -1)
+          if [ -z "${device}" ]; then
+            echo "::error::No iPhone simulator on this image"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using ${device}"
+          echo "IOS_DEVICE=${device}" >> "${GITHUB_ENV}"
+
+      - name: iOS tests
+        run: ./gradlew iosSimulatorArm64Test -Pkabuki.ios.device="${IOS_DEVICE}" --stacktrace
+
+      # detekt has no type resolution for native targets, so the source-set task is
+      # all there is - weaker than detektMainJvm, and still better than nothing.
+      - name: Static analysis of the iOS sources
+        run: ./gradlew detektIosMainSourceSet --stacktrace
+
+      - name: Keep the reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-reports
+          path: |
+            build/*/reports/tests/**
+            build/*/test-results/**
+            build/*/reports/detekt/**
+          retention-days: 7
+
   # The workflows and the actions they call are code too, and the ways they go
   # wrong - injections, over-broad permissions, unpinned actions - have their own
   # linter.
@@ -215,7 +278,7 @@ jobs:
   # One stable name to require in branch protection, instead of five that change
   # whenever a matrix does.
   check-ok:
-    needs: [build, checks, consumer, window, workflows]
+    needs: [build, checks, consumer, window, ios, workflows]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -223,9 +286,11 @@ jobs:
       - name: Everything green
         run: |
           echo "build=${{ needs.build.result }} checks=${{ needs.checks.result }}"
-          echo "consumer=${{ needs.consumer.result }} window=${{ needs.window.result }} workflows=${{ needs.workflows.result }}"
+          echo "consumer=${{ needs.consumer.result }} window=${{ needs.window.result }}"
+          echo "ios=${{ needs.ios.result }} workflows=${{ needs.workflows.result }}"
           test "${{ needs.build.result }}" = "success"
           test "${{ needs.checks.result }}" = "success"
           test "${{ needs.consumer.result }}" = "success"
           test "${{ needs.window.result }}" = "success"
+          test "${{ needs.ios.result }}" = "success"
           test "${{ needs.workflows.result }}" = "success"

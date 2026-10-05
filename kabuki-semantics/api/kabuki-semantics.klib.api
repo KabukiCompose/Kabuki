@@ -1,0 +1,26 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.kabukicompose:kabuki-semantics>
+final val kabuki.semantics/BackgroundColorKey // kabuki.semantics/BackgroundColorKey|{}BackgroundColorKey[0]
+    final fun <get-BackgroundColorKey>(): androidx.compose.ui.semantics/SemanticsPropertyKey<androidx.compose.ui.graphics/Color> // kabuki.semantics/BackgroundColorKey.<get-BackgroundColorKey>|<get-BackgroundColorKey>(){}[0]
+final val kabuki.semantics/LazyListItemIndexKey // kabuki.semantics/LazyListItemIndexKey|{}LazyListItemIndexKey[0]
+    final fun <get-LazyListItemIndexKey>(): androidx.compose.ui.semantics/SemanticsPropertyKey<kotlin/Int> // kabuki.semantics/LazyListItemIndexKey.<get-LazyListItemIndexKey>|<get-LazyListItemIndexKey>(){}[0]
+final val kabuki.semantics/LazyListLengthKey // kabuki.semantics/LazyListLengthKey|{}LazyListLengthKey[0]
+    final fun <get-LazyListLengthKey>(): androidx.compose.ui.semantics/SemanticsPropertyKey<kotlin/Int> // kabuki.semantics/LazyListLengthKey.<get-LazyListLengthKey>|<get-LazyListLengthKey>(){}[0]
+final val kabuki.semantics/TestTagParamsKey // kabuki.semantics/TestTagParamsKey|{}TestTagParamsKey[0]
+    final fun <get-TestTagParamsKey>(): androidx.compose.ui.semantics/SemanticsPropertyKey<kotlin.collections/List<kotlin/String>> // kabuki.semantics/TestTagParamsKey.<get-TestTagParamsKey>|<get-TestTagParamsKey>(){}[0]
+final val kabuki.semantics/TintColorKey // kabuki.semantics/TintColorKey|{}TintColorKey[0]
+    final fun <get-TintColorKey>(): androidx.compose.ui.semantics/SemanticsPropertyKey<androidx.compose.ui.graphics/Color> // kabuki.semantics/TintColorKey.<get-TintColorKey>|<get-TintColorKey>(){}[0]
+final val kabuki.semantics/tagName // kabuki.semantics/tagName|@kotlin.Enum<*>{}tagName[0]
+    final fun (kotlin/Enum<*>).<get-tagName>(): kotlin/String // kabuki.semantics/tagName.<get-tagName>|<get-tagName>@kotlin.Enum<*>(){}[0]
+
+final fun (androidx.compose.ui/Modifier).kabuki.semantics/testBackgroundColor(androidx.compose.ui.graphics/Color): androidx.compose.ui/Modifier // kabuki.semantics/testBackgroundColor|testBackgroundColor@androidx.compose.ui.Modifier(androidx.compose.ui.graphics.Color){}[0]
+final fun (androidx.compose.ui/Modifier).kabuki.semantics/testListItem(kotlin/Int): androidx.compose.ui/Modifier // kabuki.semantics/testListItem|testListItem@androidx.compose.ui.Modifier(kotlin.Int){}[0]
+final fun (androidx.compose.ui/Modifier).kabuki.semantics/testListLength(kotlin/Int): androidx.compose.ui/Modifier // kabuki.semantics/testListLength|testListLength@androidx.compose.ui.Modifier(kotlin.Int){}[0]
+final fun (androidx.compose.ui/Modifier).kabuki.semantics/testTag(kotlin/Enum<*>, kotlin/Array<out kotlin/Any>...): androidx.compose.ui/Modifier // kabuki.semantics/testTag|testTag@androidx.compose.ui.Modifier(kotlin.Enum<*>;kotlin.Array<out|kotlin.Any>...){}[0]
+final fun (androidx.compose.ui/Modifier).kabuki.semantics/testTintColor(androidx.compose.ui.graphics/Color): androidx.compose.ui/Modifier // kabuki.semantics/testTintColor|testTintColor@androidx.compose.ui.Modifier(androidx.compose.ui.graphics.Color){}[0]
