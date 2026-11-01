@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up JDK
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
@@ -53,7 +53,7 @@ jobs:
       # runs Gradle goes through it: a swapped jar in a pull request would be
       # code execution on the runner, and nothing else looks at that binary.
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       # kabuki-runner is a library: one self-instrumenting test APK. The sample is
       # an application, so it needs its own APK next to the test one.
@@ -79,7 +79,7 @@ jobs:
       # cell later than that finds no artifact - use "Re-run all jobs" then, so
       # this job builds them again.
       - name: Hand them to the emulators
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: apks
           path: apks
@@ -129,13 +129,13 @@ jobs:
 
       # Marathon runs on the JVM. It is the only reason Java is here.
       - name: Set up JDK
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
 
       - name: Take the APKs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: apks
           path: apks
@@ -321,7 +321,7 @@ jobs:
 
       - name: Keep the reports of a failed run
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: device-reports-api${{ matrix.api }}-${{ matrix.label }}-shard${{ matrix.shard }}
           path: marathon-report/**
